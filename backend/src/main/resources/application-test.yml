@@ -1,0 +1,33 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: portfolio-backend-test
+  datasource:
+    url: jdbc:h2:mem:portfoliotest;DB_CLOSE_DELAY=-1;MODE=MySQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+    open-in-view: false
+    show-sql: false
+  sql:
+    init:
+      mode: never
+  ai:
+    openai:
+      api-key: test-mock-key
+      chat:
+        options:
+          model: gpt-4o-mini
+
+app:
+  cors:
+    allowed-origins: http://localhost:3000
+  chat:
+    max-message-length: 1000
+    rate-limit-per-minute: 50

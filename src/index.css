@@ -1,0 +1,62 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap");
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  scroll-behavior: smooth;
+  font-family: "Poppins", sans-serif;
+}
+
+html {
+  background: #070a13;
+}
+
+body {
+  margin: 0px !important;
+  padding: 0;
+  font-family: "Poppins", sans-serif;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(34, 211, 238, 0.12), transparent 28%),
+    radial-gradient(circle at 88% 20%, rgba(139, 92, 246, 0.14), transparent 30%),
+    linear-gradient(180deg, #070a13 0%, #0b1020 48%, #070a13 100%);
+  color: #f8fafc;
+}
+
+body::selection {
+  background: rgba(139, 92, 246, 0.35);
+  color: #ffffff;
+}
+
+a,
+button,
+input,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* width */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 80px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: #080b14;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #8b5cf6, #22d3ee);
+  border-radius: 999px;
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #a78bfa, #67e8f9);
+}
+
+::-webkit-backdrop-filter {
+  blur: 3px saturate(106%);
+}
