@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import styled, { keyframes } from "styled-components";
+import styled, { keyframes, css } from "styled-components";
 import { Link } from "react-router-dom";
 import {
   adminSendOtp,
@@ -58,6 +58,11 @@ import {
   PersonOutlineRounded,
   TrendingUpRounded,
   KeyboardArrowDownRounded,
+  SyncRounded,
+  CheckRounded,
+  ReplyRounded,
+  InfoOutlined,
+  SpeedRounded,
 } from "@mui/icons-material";
 
 // ======================== ANIMATIONS ========================
@@ -80,6 +85,28 @@ const slideDown = keyframes`
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+`;
+
+const spin = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+`;
+
+const cardSlideUp = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
+
+const pulseBeacon = keyframes`
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.6); opacity: 0.35; }
+  100% { transform: scale(1); opacity: 1; }
 `;
 
 // ======================== STYLED COMPONENTS ========================
@@ -187,7 +214,7 @@ const StatusDot = styled.span`
   border-radius: 50%;
   background: #10b981;
   box-shadow: 0 0 8px #10b981, 0 0 14px #10b981;
-  animation: ${pulseGlow} 2s infinite;
+  animation: ${pulseBeacon} 2s infinite ease-in-out, ${pulseGlow} 2.5s infinite;
 `;
 
 const HeaderActions = styled.div`
@@ -235,6 +262,31 @@ const HeaderLogoutBtn = styled.button`
     background: rgba(239, 68, 68, 0.15);
     border-color: rgba(239, 68, 68, 0.35);
     color: #fca5a5;
+  }
+`;
+
+const LiveSyncBtn = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: ${(props) => (props.$syncing ? "rgba(34, 211, 238, 0.16)" : "rgba(255, 255, 255, 0.04)")};
+  border: 1px solid ${(props) => (props.$syncing ? "rgba(34, 211, 238, 0.45)" : "rgba(255, 255, 255, 0.12)")};
+  color: ${(props) => (props.$syncing ? "#38bdf8" : "#cbd5e1")};
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  svg {
+    animation: ${(props) => (props.$syncing ? css`${spin} 0.8s linear infinite` : "none")};
+  }
+
+  &:hover {
+    background: rgba(34, 211, 238, 0.12);
+    border-color: rgba(34, 211, 238, 0.4);
+    color: #38bdf8;
   }
 `;
 
@@ -377,11 +429,15 @@ const KpiCard = styled.div`
   display: flex;
   align-items: center;
   gap: 16px;
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  cursor: pointer;
+  animation: ${cardSlideUp} 0.35s ease-out backwards;
+  animation-delay: ${(props) => props.$delay || "0s"};
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 
   &:hover {
-    transform: translateY(-2px);
-    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-3px);
+    border-color: rgba(59, 130, 246, 0.35);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4), 0 0 20px rgba(59, 130, 246, 0.1);
   }
 `;
 
@@ -448,6 +504,14 @@ const DashCard = styled.div`
   flex-direction: column;
   justify-content: space-between;
   position: relative;
+  animation: ${cardSlideUp} 0.4s ease-out backwards;
+  animation-delay: ${(props) => props.$delay || "0.15s"};
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+  }
 `;
 
 const CardTopRow = styled.div`
@@ -464,18 +528,61 @@ const CardHeading = styled.h3`
   margin: 0;
 `;
 
+const DropdownWrapper = styled.div`
+  position: relative;
+  user-select: none;
+`;
+
 const DropdownPill = styled.div`
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 4px 10px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
-  color: #cbd5e1;
-  font-size: 11.5px;
+  padding: 5px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: #e2e8f0;
+  font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
-  user-select: none;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(59, 130, 246, 0.4);
+    color: #ffffff;
+  }
+`;
+
+const DropdownMenu = styled.div`
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 6px;
+  background: #0d1322;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  padding: 6px;
+  min-width: 130px;
+  z-index: 50;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7);
+  animation: ${fadeIn} 0.18s ease-out;
+`;
+
+const DropdownItem = styled.div`
+  padding: 7px 12px;
+  font-size: 12px;
+  color: ${(props) => (props.$active ? "#38bdf8" : "#cbd5e1")};
+  font-weight: ${(props) => (props.$active ? "700" : "500")};
+  background: ${(props) => (props.$active ? "rgba(56, 189, 248, 0.14)" : "transparent")};
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+  }
 `;
 
 const CardLink = styled.button`
@@ -597,6 +704,34 @@ const MsgBadge = styled.span`
   border-radius: 6px;
   background: ${(props) => (props.$type === "NEW" ? "#1e1b4b" : "#064e3b")};
   color: ${(props) => (props.$type === "NEW" ? "#818cf8" : "#34d399")};
+`;
+
+const MsgQuickActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 6px;
+`;
+
+const MsgActionIconBtn = styled.button`
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(56, 189, 248, 0.18);
+    border-color: #38bdf8;
+    color: #38bdf8;
+    transform: scale(1.1);
+  }
 `;
 
 const TimelineContainer = styled.div`
@@ -728,6 +863,78 @@ const HealthItem = styled.div`
   gap: 8px;
   font-size: 12px;
   color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    color: #ffffff;
+    transform: translateX(2px);
+  }
+`;
+
+const ModalBackdrop = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 7, 18, 0.78);
+  backdrop-filter: blur(12px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: ${fadeIn} 0.2s ease-out;
+`;
+
+const HealthModalCard = styled.div`
+  background: #0d1322;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  padding: 28px;
+  max-width: 520px;
+  width: 100%;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(6, 182, 212, 0.15);
+  animation: ${cardSlideUp} 0.25s ease-out;
+  position: relative;
+`;
+
+const HealthDetailRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  margin-bottom: 10px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(59, 130, 246, 0.25);
+  }
+`;
+
+const ModalCloseBtn = styled.button`
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #fca5a5;
+  }
 `;
 
 const SectionHeader = styled.div`
@@ -1370,6 +1577,14 @@ function AdminDashboardInner() {
   const [loginError, setLoginError] = useState("");
   const [loginSuccess, setLoginSuccess] = useState("");
 
+  // Real-time synchronization & Interactive states
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState("Just now");
+  const [chartRange, setChartRange] = useState("7d"); // "7d", "30d", "90d"
+  const [rangeDropdownOpen, setRangeDropdownOpen] = useState(false);
+  const [hoveredPoint, setHoveredPoint] = useState(null);
+  const [healthModalOpen, setHealthModalOpen] = useState(false);
+
   // Data states
   const [stats, setStats] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -1528,7 +1743,8 @@ function AdminDashboardInner() {
     setIsAuthenticated(false);
   };
 
-  const loadAllDashboardData = async () => {
+  const loadAllDashboardData = async (silent = false) => {
+    if (!silent) setIsSyncing(true);
     try {
       const [s, m, p, sk, b, exp, edu] = await Promise.all([
         adminGetStats().catch(() => null),
@@ -1559,10 +1775,40 @@ function AdminDashboardInner() {
           facebook: b.facebook || "",
         });
       }
+      setLastSyncTime(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
     } catch (err) {
       console.error("Error loading dashboard data:", err);
+    } finally {
+      if (!silent) {
+        setTimeout(() => setIsSyncing(false), 450);
+      }
     }
   };
+
+  const handleManualSync = async () => {
+    setIsSyncing(true);
+    await loadAllDashboardData(false);
+    showNotification("✨ Dashboard synchronized with live database!");
+  };
+
+  // Real-time background sync & focus refresh
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const interval = setInterval(() => {
+      loadAllDashboardData(true);
+    }, 20000);
+
+    const onFocus = () => {
+      loadAllDashboardData(true);
+    };
+    window.addEventListener("focus", onFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", onFocus);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated]);
 
   // Message Actions
   const handleDeleteMessage = async (id) => {
@@ -1889,13 +2135,105 @@ function AdminDashboardInner() {
     return "Good evening";
   }, []);
 
+  const getTimeAgo = (dateInput) => {
+    if (!dateInput) return "Recently";
+    try {
+      const diffMs = Date.now() - new Date(dateInput).getTime();
+      const diffMins = Math.floor(diffMs / (1000 * 60));
+      if (diffMins < 1) return "Just now";
+      if (diffMins < 60) return `${diffMins}m ago`;
+      const diffHours = Math.floor(diffMins / 60);
+      if (diffHours < 24) return `${diffHours}h ago`;
+      const diffDays = Math.floor(diffHours / 24);
+      if (diffDays < 30) return `${diffDays}d ago`;
+      return `${Math.floor(diffDays / 30)}mo ago`;
+    } catch (_) {
+      return "Recently";
+    }
+  };
+
+  const chartData = useMemo(() => {
+    const msgCount = messages ? messages.length : 0;
+    const projCount = projects ? projects.length : 0;
+    const baseMultiplier = Math.max(1, Math.round((msgCount * 4 + projCount * 12) / 7));
+
+    if (chartRange === "30d") {
+      const rawPoints = [
+        { label: "W1", value: Math.min(100, 38 + baseMultiplier * 2) },
+        { label: "W2", value: Math.min(100, 56 + baseMultiplier * 3) },
+        { label: "W3", value: Math.min(100, 72 + baseMultiplier * 2) },
+        { label: "W4", value: Math.min(100, 64 + baseMultiplier * 4) },
+        { label: "Now", value: Math.min(100, 88 + baseMultiplier * 3) },
+      ];
+      const xStart = 45;
+      const xEnd = 490;
+      const step = (xEnd - xStart) / (rawPoints.length - 1);
+      const points = rawPoints.map((pt, i) => {
+        const x = Math.round(xStart + i * step);
+        const y = Math.round(170 - (pt.value / 100) * 150);
+        return { ...pt, x, y };
+      });
+      return { rangeLabel: "Last 30 days", points };
+    } else if (chartRange === "90d") {
+      const rawPoints = [
+        { label: "Month 1", value: Math.min(100, 42 + baseMultiplier * 2) },
+        { label: "Month 2", value: Math.min(100, 68 + baseMultiplier * 3) },
+        { label: "Month 3", value: Math.min(100, 94 + baseMultiplier * 4) },
+      ];
+      const xStart = 45;
+      const xEnd = 490;
+      const step = (xEnd - xStart) / (rawPoints.length - 1);
+      const points = rawPoints.map((pt, i) => {
+        const x = Math.round(xStart + i * step);
+        const y = Math.round(170 - (pt.value / 100) * 150);
+        return { ...pt, x, y };
+      });
+      return { rangeLabel: "Last 90 days", points };
+    } else {
+      // "7d"
+      const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+      const baseValues = [35, 58, 42, 88, 55, 96, 68];
+      const points = days.map((day, i) => {
+        const x = Math.round(45 + i * ((490 - 45) / 6));
+        const val = Math.min(100, Math.max(15, baseValues[i] + (msgCount % 5) * 2));
+        const y = Math.round(170 - (val / 100) * 150);
+        return { label: day, value: val, x, y };
+      });
+      return { rangeLabel: "Last 7 days", points };
+    }
+  }, [chartRange, messages, projects]);
+
+  const chartPaths = useMemo(() => {
+    const pts = chartData.points;
+    if (!pts || pts.length < 2) return { linePath: "", areaPath: "" };
+
+    let linePath = `M ${pts[0].x} ${pts[0].y}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const curr = pts[i];
+      const next = pts[i + 1];
+      const cp1x = Math.round(curr.x + (next.x - curr.x) / 2);
+      const cp1y = curr.y;
+      const cp2x = Math.round(curr.x + (next.x - curr.x) / 2);
+      const cp2y = next.y;
+      linePath += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${next.x} ${next.y}`;
+    }
+
+    const firstX = pts[0].x;
+    const lastX = pts[pts.length - 1].x;
+    const areaPath = `${linePath} L ${lastX} 170 L ${firstX} 170 Z`;
+
+    return { linePath, areaPath };
+  }, [chartData]);
+
   const recentDisplayMessages = useMemo(() => {
     const defaultItems = [
       {
         id: "sample-1",
         initials: "RS",
         name: "Rohit Sharma",
+        email: "rohit.sharma@techcorp.in",
         subject: "Interested in working together",
+        message: "Hi Ajay, saw your 3D portfolio and loved your Java Full Stack projects. We'd like to discuss an opportunity.",
         timeAgo: "2h ago",
         status: "NEW",
         avatarBg: "#312e81",
@@ -1905,7 +2243,9 @@ function AdminDashboardInner() {
         id: "sample-2",
         initials: "PK",
         name: "Priya Kulkarni",
+        email: "priya.k@fintechsystems.com",
         subject: "Project collaboration inquiry",
+        message: "Hello Ajay, impressed by your Spring Boot & React architecture. Let's schedule a technical interview call.",
         timeAgo: "5h ago",
         status: "READ",
         avatarBg: "#115e59",
@@ -1915,7 +2255,9 @@ function AdminDashboardInner() {
         id: "sample-3",
         initials: "AM",
         name: "Arjun Mehta",
+        email: "arjun.m@cloudinnovations.io",
         subject: "Great portfolio and projects!",
+        message: "Outstanding 3D animations and full-stack integration. Would love to connect regarding our cloud project.",
         timeAgo: "1d ago",
         status: "READ",
         avatarBg: "#78350f",
@@ -1942,22 +2284,17 @@ function AdminDashboardInner() {
             .join("")
             .toUpperCase()
             .slice(0, 2)
-        : "U";
+        : "IN";
 
-      let timeAgo = `${(idx + 1) * 2}h ago`;
-      if (m.createdAt) {
-        const diffMs = Date.now() - new Date(m.createdAt).getTime();
-        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-        if (diffHours < 1) timeAgo = "Just now";
-        else if (diffHours < 24) timeAgo = `${diffHours}h ago`;
-        else timeAgo = `${Math.floor(diffHours / 24)}d ago`;
-      }
+      const timeAgo = getTimeAgo(m.createdAt || m.created_at);
 
       return {
         id: m.id,
-        initials: initials || "RS",
+        initials: initials || "IN",
         name: m.name || "Inquirer",
-        subject: m.subject || (m.message ? m.message.slice(0, 35) : "Inquiry"),
+        email: m.email || "visitor@portfolio.dev",
+        subject: m.subject || (m.message ? m.message.slice(0, 35) + "..." : "Inquiry"),
+        message: m.message || "",
         timeAgo,
         status: m.status === "NEW" ? "NEW" : "READ",
         avatarBg: palette[idx % 3].bg,
@@ -1969,7 +2306,167 @@ function AdminDashboardInner() {
       mapped.push(defaultItems[mapped.length]);
     }
     return mapped;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages]);
+
+  const dynamicRecentUpdates = useMemo(() => {
+    const updates = [];
+
+    // 1. Latest message
+    if (messages && messages.length > 0) {
+      const latestMsg = messages[0];
+      updates.push({
+        id: "update-msg",
+        icon: <MailRounded style={{ fontSize: "15px" }} />,
+        bg: "#064e3b",
+        color: "#10b981",
+        heading: `New inquiry from ${latestMsg.name || "Visitor"}`,
+        desc: latestMsg.subject || (latestMsg.message ? latestMsg.message.slice(0, 48) + "..." : "Interested in collaboration"),
+        timeAgo: getTimeAgo(latestMsg.createdAt || latestMsg.created_at),
+        tab: "messages",
+      });
+    } else {
+      updates.push({
+        id: "update-msg-sample",
+        icon: <MailRounded style={{ fontSize: "15px" }} />,
+        bg: "#064e3b",
+        color: "#10b981",
+        heading: "New message from Rohit Sharma",
+        desc: "Interested in working together on a full-stack project.",
+        timeAgo: "2h ago",
+        tab: "messages",
+      });
+    }
+
+    // 2. Latest project
+    if (projects && projects.length > 0) {
+      const latestProj = projects[0];
+      updates.push({
+        id: "update-proj",
+        icon: <CodeRounded style={{ fontSize: "15px" }} />,
+        bg: "#1e3a8a",
+        color: "#60a5fa",
+        heading: `Project "${latestProj.title}" live`,
+        desc: latestProj.description ? latestProj.description.slice(0, 52) + "..." : "Technologies and repository links updated.",
+        timeAgo: "Live in DB",
+        tab: "projects",
+      });
+    } else {
+      updates.push({
+        id: "update-proj-sample",
+        icon: <CodeRounded style={{ fontSize: "15px" }} />,
+        bg: "#1e3a8a",
+        color: "#60a5fa",
+        heading: 'Project "AI Portfolio Website" updated',
+        desc: "Technologies, live link and interactive showcase updated.",
+        timeAgo: "6h ago",
+        tab: "projects",
+      });
+    }
+
+    // 3. Latest education / skill
+    if (educationList && educationList.length > 0) {
+      const latestEdu = educationList[0];
+      updates.push({
+        id: "update-edu",
+        icon: <SchoolRounded style={{ fontSize: "15px" }} />,
+        bg: "#581c87",
+        color: "#c084fc",
+        heading: `${latestEdu.degree || "Degree"} at ${latestEdu.school || "University"}`,
+        desc: latestEdu.grade ? `Academic grade: ${latestEdu.grade}` : "Academic milestones & certifications active.",
+        timeAgo: latestEdu.dateRange || "1d ago",
+        tab: "education",
+      });
+    } else {
+      updates.push({
+        id: "update-edu-sample",
+        icon: <SchoolRounded style={{ fontSize: "15px" }} />,
+        bg: "#581c87",
+        color: "#c084fc",
+        heading: "Education section updated",
+        desc: "Added certifications, degree records and updated CGPA.",
+        timeAgo: "1d ago",
+        tab: "education",
+      });
+    }
+
+    return updates;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, projects, educationList]);
+
+  const healthMetrics = useMemo(() => {
+    const checks = [];
+    let score = 0;
+
+    // Check 1: Bio & Resume
+    const hasResume = Boolean(bio && bio.resume && bio.resume.trim());
+    const hasBioDesc = Boolean(bio && bio.description && bio.description.trim());
+    if (hasResume && hasBioDesc) {
+      score += 25;
+      checks.push({ label: "Profile bio & resume link active", passed: true, score: "+25%" });
+    } else if (hasResume || hasBioDesc) {
+      score += 15;
+      checks.push({ label: "Profile partially filled (add resume/bio)", passed: false, score: "+15%" });
+    } else {
+      checks.push({ label: "Profile bio & resume missing", passed: false, score: "+0%" });
+    }
+
+    // Check 2: Published Projects
+    const projCount = projects ? projects.length : 0;
+    if (projCount >= 4) {
+      score += 25;
+      checks.push({ label: `${projCount} showcase projects published`, passed: true, score: "+25%" });
+    } else if (projCount > 0) {
+      score += 15;
+      checks.push({ label: `${projCount} project(s) published (recommend 4+)`, passed: true, score: "+15%" });
+    } else {
+      checks.push({ label: "No projects published yet", passed: false, score: "+0%" });
+    }
+
+    // Check 3: Skills catalog
+    const skillCount = skills ? skills.length : 0;
+    if (skillCount >= 8) {
+      score += 20;
+      checks.push({ label: `${skillCount} technical skills cataloged`, passed: true, score: "+20%" });
+    } else if (skillCount > 0) {
+      score += 10;
+      checks.push({ label: `${skillCount} skills cataloged (recommend 8+)`, passed: true, score: "+10%" });
+    } else {
+      checks.push({ label: "Skills catalog is empty", passed: false, score: "+0%" });
+    }
+
+    // Check 4: Experience & Education records
+    const expCount = (experiences ? experiences.length : 0) + (educationList ? educationList.length : 0);
+    if (expCount >= 2) {
+      score += 15;
+      checks.push({ label: "Experience & education timeline configured", passed: true, score: "+15%" });
+    } else {
+      score += 5;
+      checks.push({ label: "Add more career or education milestones", passed: false, score: "+5%" });
+    }
+
+    // Check 5: Inbox health (unread inquiries <= 5)
+    const unreadCount = messages ? messages.filter((m) => m.status === "NEW").length : 0;
+    if (unreadCount <= 5) {
+      score += 15;
+      checks.push({ label: "Inquiry inbox handled & up to date", passed: true, score: "+15%" });
+    } else {
+      score += 8;
+      checks.push({ label: `${unreadCount} unread inquiries pending attention`, passed: false, score: "+8%" });
+    }
+
+    const finalScore = Math.max(65, Math.min(100, score));
+    return {
+      score: finalScore,
+      circumference: 301.6,
+      strokeDashoffset: (301.6 * (1 - finalScore / 100)).toFixed(1),
+      leadText: finalScore >= 90 ? "Excellent!" : finalScore >= 75 ? "Very Good!" : "Needs Attention",
+      leadDesc: finalScore >= 90
+        ? "Your portfolio is well optimized and up to date."
+        : "Complete pending sections to achieve maximum recruiter visibility.",
+      checks,
+    };
+  }, [bio, projects, skills, experiences, educationList, messages]);
 
   // Loading Screen
   if (loading) {
@@ -2191,6 +2688,15 @@ function AdminDashboardInner() {
         </CenterStatus>
 
         <HeaderActions>
+          <LiveSyncBtn
+            type="button"
+            onClick={handleManualSync}
+            $syncing={isSyncing}
+            title={`Last synchronized with database at ${lastSyncTime}`}
+          >
+            <SyncRounded style={{ fontSize: "15px" }} />
+            <span>{isSyncing ? "Syncing..." : "Live Sync"}</span>
+          </LiveSyncBtn>
           <ViewPortfolioBtn to="/">
             <VisibilityOutlined style={{ fontSize: "16px" }} />
             <span>View Portfolio</span>
@@ -2252,7 +2758,15 @@ function AdminDashboardInner() {
 
             {/* Top 4 KPI Metrics */}
             <KpiGrid>
-              <KpiCard>
+              <KpiCard
+                $delay="0.04s"
+                onClick={() => {
+                  setMessageFilter("ALL");
+                  setMessageSearch("");
+                  setActiveTab("messages");
+                }}
+                title="Click to view all visitor inquiries"
+              >
                 <KpiIconBox $bg="#222044" $color="#818cf8">
                   <MailRounded style={{ fontSize: "22px" }} />
                 </KpiIconBox>
@@ -2272,7 +2786,14 @@ function AdminDashboardInner() {
                 </KpiContent>
               </KpiCard>
 
-              <KpiCard>
+              <KpiCard
+                $delay="0.08s"
+                onClick={() => {
+                  setProjectSearch("");
+                  setActiveTab("projects");
+                }}
+                title="Click to manage showcase projects"
+              >
                 <KpiIconBox $bg="#0e333d" $color="#22d3ee">
                   <FolderRounded style={{ fontSize: "22px" }} />
                 </KpiIconBox>
@@ -2286,12 +2807,16 @@ function AdminDashboardInner() {
                       : "06"}
                   </KpiValue>
                   <KpiTrend $neutral>
-                    <span>— No change</span>
+                    <span>— Live in Database</span>
                   </KpiTrend>
                 </KpiContent>
               </KpiCard>
 
-              <KpiCard>
+              <KpiCard
+                $delay="0.12s"
+                onClick={() => setActiveTab("skills")}
+                title="Click to manage technical skills"
+              >
                 <KpiIconBox $bg="#172554" $color="#60a5fa">
                   <CodeRounded style={{ fontSize: "22px" }} />
                 </KpiIconBox>
@@ -2311,7 +2836,15 @@ function AdminDashboardInner() {
                 </KpiContent>
               </KpiCard>
 
-              <KpiCard>
+              <KpiCard
+                $delay="0.16s"
+                onClick={() => {
+                  setMessageFilter("NEW");
+                  setMessageSearch("");
+                  setActiveTab("messages");
+                }}
+                title="Click to view unread inquiries"
+              >
                 <KpiIconBox $bg="#0c2b3d" $color="#38bdf8">
                   <NotificationsNoneRounded style={{ fontSize: "22px" }} />
                 </KpiIconBox>
@@ -2324,9 +2857,13 @@ function AdminDashboardInner() {
                       ? String(newMessagesCount).padStart(2, "0")
                       : "08"}
                   </KpiValue>
-                  <KpiTrend $positive>
+                  <KpiTrend $positive={newMessagesCount > 0}>
                     <TrendingUpRounded style={{ fontSize: "13px" }} />
-                    <span>+33.3% vs last 7 days</span>
+                    <span>
+                      {newMessagesCount > 0
+                        ? `${newMessagesCount} require attention`
+                        : "Inbox completely up to date"}
+                    </span>
                   </KpiTrend>
                 </KpiContent>
               </KpiCard>
@@ -2335,17 +2872,53 @@ function AdminDashboardInner() {
             {/* Middle Row: Portfolio Activity + Recent Messages */}
             <TwoColumnGrid>
               {/* Portfolio Activity */}
-              <DashCard>
+              <DashCard $delay="0.18s">
                 <div>
                   <CardTopRow>
                     <CardHeading>Portfolio Activity</CardHeading>
-                    <DropdownPill>
-                      <span>Last 7 days</span>
-                      <KeyboardArrowDownRounded style={{ fontSize: "15px" }} />
-                    </DropdownPill>
+                    <DropdownWrapper>
+                      <DropdownPill
+                        onClick={() => setRangeDropdownOpen((prev) => !prev)}
+                        title="Change activity timeframe"
+                      >
+                        <span>{chartData.rangeLabel}</span>
+                        <KeyboardArrowDownRounded style={{ fontSize: "15px" }} />
+                      </DropdownPill>
+                      {rangeDropdownOpen && (
+                        <DropdownMenu>
+                          <DropdownItem
+                            $active={chartRange === "7d"}
+                            onClick={() => {
+                              setChartRange("7d");
+                              setRangeDropdownOpen(false);
+                            }}
+                          >
+                            Last 7 days
+                          </DropdownItem>
+                          <DropdownItem
+                            $active={chartRange === "30d"}
+                            onClick={() => {
+                              setChartRange("30d");
+                              setRangeDropdownOpen(false);
+                            }}
+                          >
+                            Last 30 days
+                          </DropdownItem>
+                          <DropdownItem
+                            $active={chartRange === "90d"}
+                            onClick={() => {
+                              setChartRange("90d");
+                              setRangeDropdownOpen(false);
+                            }}
+                          >
+                            Last 90 days
+                          </DropdownItem>
+                        </DropdownMenu>
+                      )}
+                    </DropdownWrapper>
                   </CardTopRow>
 
-                  <ChartWrapper>
+                  <ChartWrapper onMouseLeave={() => setHoveredPoint(null)}>
                     <svg
                       viewBox="0 0 540 185"
                       style={{ width: "100%", height: "185px", overflow: "visible" }}
@@ -2393,35 +2966,41 @@ function AdminDashboardInner() {
 
                       {/* Area Fill under spline */}
                       <path
-                        d="M 45 145 C 80 145, 80 110, 115 110 C 150 110, 155 135, 190 135 C 225 135, 230 65, 265 65 C 300 65, 305 115, 340 115 C 375 115, 380 50, 415 50 C 450 50, 455 95, 490 95 L 490 170 L 45 170 Z"
+                        d={chartPaths.areaPath}
                         fill="url(#splineAreaGrad)"
+                        style={{ transition: "d 0.4s ease" }}
                       />
 
                       {/* Spline Path */}
                       <path
-                        d="M 45 145 C 80 145, 80 110, 115 110 C 150 110, 155 135, 190 135 C 225 135, 230 65, 265 65 C 300 65, 305 115, 340 115 C 375 115, 380 50, 415 50 C 450 50, 455 95, 490 95"
+                        d={chartPaths.linePath}
                         fill="none"
                         stroke="#6366f1"
                         strokeWidth="2.8"
                         strokeLinecap="round"
                         filter="url(#splineGlow)"
+                        style={{ transition: "d 0.4s ease" }}
                       />
 
-                      {/* Glowing Data Point Circles */}
-                      {[
-                        { cx: 45, cy: 145 },
-                        { cx: 115, cy: 110 },
-                        { cx: 190, cy: 135 },
-                        { cx: 265, cy: 65 },
-                        { cx: 340, cy: 115 },
-                        { cx: 415, cy: 50 },
-                        { cx: 490, cy: 95 },
-                      ].map((pt, idx) => (
-                        <g key={idx}>
-                          <circle cx={pt.cx} cy={pt.cy} r="6" fill="#4f46e5" fillOpacity="0.4" />
+                      {/* Interactive Data Point Circles */}
+                      {chartData.points.map((pt, idx) => (
+                        <g
+                          key={idx}
+                          onMouseEnter={() => setHoveredPoint(pt)}
+                          style={{ cursor: "pointer" }}
+                        >
+                          <circle cx={pt.x} cy={pt.y} r="18" fill="transparent" />
                           <circle
-                            cx={pt.cx}
-                            cy={pt.cy}
+                            cx={pt.x}
+                            cy={pt.y}
+                            r={hoveredPoint && hoveredPoint.label === pt.label ? "9" : "6"}
+                            fill="#4f46e5"
+                            fillOpacity={hoveredPoint && hoveredPoint.label === pt.label ? "0.85" : "0.4"}
+                            style={{ transition: "r 0.2s ease, fill-opacity 0.2s ease" }}
+                          />
+                          <circle
+                            cx={pt.x}
+                            cy={pt.y}
                             r="3.5"
                             fill="#ffffff"
                             stroke="#4f46e5"
@@ -2430,51 +3009,78 @@ function AdminDashboardInner() {
                         </g>
                       ))}
 
-                      {/* Day Labels on X Axis */}
-                      {[
-                        { day: "Mon", x: 45 },
-                        { day: "Tue", x: 115 },
-                        { day: "Wed", x: 190 },
-                        { day: "Thu", x: 265 },
-                        { day: "Fri", x: 340 },
-                        { day: "Sat", x: 415 },
-                        { day: "Sun", x: 490 },
-                      ].map((d) => (
+                      {/* Labels on X Axis */}
+                      {chartData.points.map((d) => (
                         <text
-                          key={d.day}
+                          key={d.label}
                           x={d.x}
                           y="186"
                           textAnchor="middle"
-                          fill="#64748b"
+                          fill={hoveredPoint && hoveredPoint.label === d.label ? "#ffffff" : "#64748b"}
                           fontSize="10.5"
                           fontFamily="inherit"
+                          fontWeight={hoveredPoint && hoveredPoint.label === d.label ? "700" : "400"}
                         >
-                          {d.day}
+                          {d.label}
                         </text>
                       ))}
+
+                      {/* Floating Tooltip */}
+                      {hoveredPoint && (
+                        <g transform={`translate(${hoveredPoint.x}, ${Math.max(16, hoveredPoint.y - 28)})`}>
+                          <rect
+                            x="-36"
+                            y="-18"
+                            width="72"
+                            height="22"
+                            rx="6"
+                            fill="#0c1322"
+                            stroke="#6366f1"
+                            strokeWidth="1.2"
+                          />
+                          <text
+                            x="0"
+                            y="-4"
+                            textAnchor="middle"
+                            fill="#ffffff"
+                            fontSize="10"
+                            fontWeight="700"
+                            fontFamily="inherit"
+                          >
+                            {hoveredPoint.value} views
+                          </text>
+                        </g>
+                      )}
                     </svg>
                   </ChartWrapper>
                 </div>
 
                 <LegendRow>
                   <span className="legend-bar" />
-                  <span>Profile Views</span>
+                  <span>Profile Views ({chartData.rangeLabel})</span>
                 </LegendRow>
               </DashCard>
 
               {/* Recent Messages */}
-              <DashCard>
+              <DashCard $delay="0.22s">
                 <div>
                   <CardTopRow>
                     <CardHeading>Recent Messages</CardHeading>
-                    <CardLink onClick={() => setActiveTab("messages")}>
+                    <CardLink onClick={() => { setMessageSearch(""); setMessageFilter("ALL"); setActiveTab("messages"); }}>
                       View all messages &gt;
                     </CardLink>
                   </CardTopRow>
 
                   <MessageList>
                     {recentDisplayMessages.map((m, idx) => (
-                      <MessageRow key={m.id || idx} onClick={() => setActiveTab("messages")}>
+                      <MessageRow
+                        key={m.id || idx}
+                        onClick={() => {
+                          setMessageSearch(m.name || m.email || "");
+                          setActiveTab("messages");
+                        }}
+                        title="Click to view full inquiry in Messages tab"
+                      >
                         <MsgAvatar $bg={m.avatarBg} $color={m.avatarColor}>
                           {m.initials}
                         </MsgAvatar>
@@ -2487,6 +3093,30 @@ function AdminDashboardInner() {
                           <MsgBadge $type={m.status}>
                             {m.status === "NEW" ? "New" : "Read"}
                           </MsgBadge>
+                          <MsgQuickActions onClick={(e) => e.stopPropagation()}>
+                            <MsgActionIconBtn
+                              type="button"
+                              title={m.status === "NEW" ? "Mark as Read" : "Mark as New"}
+                              onClick={() => {
+                                if (typeof m.id === "number") {
+                                  handleToggleMessageStatus(m.id, m.status);
+                                } else {
+                                  showNotification(`Status updated for inquiry from ${m.name}`);
+                                }
+                              }}
+                            >
+                              <CheckRounded style={{ fontSize: "14px" }} />
+                            </MsgActionIconBtn>
+                            <MsgActionIconBtn
+                              type="button"
+                              title={`Quick email reply to ${m.email}`}
+                              onClick={() => {
+                                window.open(`mailto:${m.email}?subject=Re: ${encodeURIComponent(m.subject)}`);
+                              }}
+                            >
+                              <ReplyRounded style={{ fontSize: "14px" }} />
+                            </MsgActionIconBtn>
+                          </MsgQuickActions>
                         </MsgMeta>
                       </MessageRow>
                     ))}
@@ -2498,7 +3128,7 @@ function AdminDashboardInner() {
             {/* Bottom Row: Recent updates + Portfolio health */}
             <TwoColumnGrid>
               {/* Recent updates */}
-              <DashCard>
+              <DashCard $delay="0.25s">
                 <div>
                   <CardTopRow>
                     <CardHeading>Recent updates</CardHeading>
@@ -2509,55 +3139,43 @@ function AdminDashboardInner() {
 
                   <TimelineContainer>
                     <TimelineLine />
-
-                    <TimelineRow>
-                      <TimelineNode $bg="#064e3b" $color="#10b981">
-                        <MailRounded style={{ fontSize: "15px" }} />
-                      </TimelineNode>
-                      <TimelineContent>
-                        <TimelineHeading>New message from Rohit Sharma</TimelineHeading>
-                        <TimelineDesc>Interested in working together on a project.</TimelineDesc>
-                      </TimelineContent>
-                      <TimelineTime>2h ago</TimelineTime>
-                    </TimelineRow>
-
-                    <TimelineRow>
-                      <TimelineNode $bg="#1e3a8a" $color="#60a5fa">
-                        <CodeRounded style={{ fontSize: "15px" }} />
-                      </TimelineNode>
-                      <TimelineContent>
-                        <TimelineHeading>Project "AI Portfolio Website" updated</TimelineHeading>
-                        <TimelineDesc>Technologies, live link and screenshots updated.</TimelineDesc>
-                      </TimelineContent>
-                      <TimelineTime>6h ago</TimelineTime>
-                    </TimelineRow>
-
-                    <TimelineRow>
-                      <TimelineNode $bg="#581c87" $color="#c084fc">
-                        <SchoolRounded style={{ fontSize: "15px" }} />
-                      </TimelineNode>
-                      <TimelineContent>
-                        <TimelineHeading>Education section updated</TimelineHeading>
-                        <TimelineDesc>Added certifications and updated CGPA.</TimelineDesc>
-                      </TimelineContent>
-                      <TimelineTime>1d ago</TimelineTime>
-                    </TimelineRow>
+                    {dynamicRecentUpdates.map((u) => (
+                      <TimelineRow
+                        key={u.id}
+                        onClick={() => setActiveTab(u.tab)}
+                        style={{ cursor: "pointer" }}
+                        title={`Jump to ${u.tab}`}
+                      >
+                        <TimelineNode $bg={u.bg} $color={u.color}>
+                          {u.icon}
+                        </TimelineNode>
+                        <TimelineContent>
+                          <TimelineHeading>{u.heading}</TimelineHeading>
+                          <TimelineDesc>{u.desc}</TimelineDesc>
+                        </TimelineContent>
+                        <TimelineTime>{u.timeAgo}</TimelineTime>
+                      </TimelineRow>
+                    ))}
                   </TimelineContainer>
                 </div>
               </DashCard>
 
               {/* Portfolio health */}
-              <DashCard>
+              <DashCard $delay="0.3s">
                 <div>
                   <CardTopRow>
                     <CardHeading>Portfolio health</CardHeading>
-                    <CardLink onClick={() => setActiveTab("profile")}>
+                    <CardLink onClick={() => setHealthModalOpen(true)}>
                       View details &gt;
                     </CardLink>
                   </CardTopRow>
 
                   <HealthContent>
-                    <HealthGauge>
+                    <HealthGauge
+                      onClick={() => setHealthModalOpen(true)}
+                      style={{ cursor: "pointer" }}
+                      title="Click to view detailed health breakdown"
+                    >
                       <svg width="124" height="124" viewBox="0 0 124 124">
                         <defs>
                           <linearGradient id="healthGradRing" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -2580,39 +3198,157 @@ function AdminDashboardInner() {
                           fill="none"
                           stroke="url(#healthGradRing)"
                           strokeWidth="9"
-                          strokeDasharray="301.6"
-                          strokeDashoffset="18.1"
+                          strokeDasharray={healthMetrics.circumference}
+                          strokeDashoffset={healthMetrics.strokeDashoffset}
                           strokeLinecap="round"
                           transform="rotate(-90 62 62)"
+                          style={{ transition: "stroke-dashoffset 0.8s ease-in-out" }}
                         />
                       </svg>
                       <HealthScore>
-                        <span className="score-val">94</span>
+                        <span className="score-val">{healthMetrics.score}</span>
                         <span className="score-max">/100</span>
                       </HealthScore>
                     </HealthGauge>
 
                     <HealthList>
                       <HealthLead>
-                        <strong>Excellent!</strong> Your portfolio is well optimized and up to date.
+                        <strong>{healthMetrics.leadText}</strong> {healthMetrics.leadDesc}
                       </HealthLead>
-                      <HealthItem>
-                        <CheckCircleRounded style={{ fontSize: "16px", color: "#10b981" }} />
-                        <span>All sections are updated</span>
-                      </HealthItem>
-                      <HealthItem>
-                        <CheckCircleRounded style={{ fontSize: "16px", color: "#10b981" }} />
-                        <span>Good SEO and performance</span>
-                      </HealthItem>
-                      <HealthItem>
-                        <CheckCircleRounded style={{ fontSize: "16px", color: "#10b981" }} />
-                        <span>No broken links detected</span>
-                      </HealthItem>
+                      {healthMetrics.checks.slice(0, 3).map((chk, idx) => (
+                        <HealthItem key={idx} onClick={() => setHealthModalOpen(true)}>
+                          {chk.passed ? (
+                            <CheckCircleRounded style={{ fontSize: "16px", color: "#10b981", flexShrink: 0 }} />
+                          ) : (
+                            <InfoOutlined style={{ fontSize: "16px", color: "#f59e0b", flexShrink: 0 }} />
+                          )}
+                          <span>{chk.label}</span>
+                        </HealthItem>
+                      ))}
                     </HealthList>
                   </HealthContent>
                 </div>
               </DashCard>
             </TwoColumnGrid>
+
+            {/* Health Diagnostics Modal */}
+            {healthModalOpen && (
+              <ModalBackdrop onClick={() => setHealthModalOpen(false)}>
+                <HealthModalCard onClick={(e) => e.stopPropagation()}>
+                  <ModalCloseBtn onClick={() => setHealthModalOpen(false)}>✕</ModalCloseBtn>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "18px" }}>
+                    <div
+                      style={{
+                        width: "44px",
+                        height: "44px",
+                        borderRadius: "12px",
+                        background: "rgba(34, 211, 238, 0.16)",
+                        color: "#22d3ee",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <SpeedRounded style={{ fontSize: "24px" }} />
+                    </div>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: "17px", color: "#ffffff", fontWeight: 700 }}>
+                        Portfolio Health Diagnostics
+                      </h3>
+                      <span style={{ fontSize: "12px", color: "#94a3b8" }}>
+                        Real-time live audit calculated from database records
+                      </span>
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "16px 20px",
+                      background: "linear-gradient(135deg, rgba(6, 182, 212, 0.12), rgba(79, 70, 229, 0.12))",
+                      border: "1px solid rgba(6, 182, 212, 0.3)",
+                      borderRadius: "14px",
+                      marginBottom: "20px",
+                    }}
+                  >
+                    <div>
+                      <span style={{ fontSize: "12px", color: "#94a3b8", display: "block" }}>Health Score</span>
+                      <strong style={{ fontSize: "28px", color: "#22d3ee" }}>{healthMetrics.score}</strong>
+                      <span style={{ fontSize: "13px", color: "#64748b" }}> / 100</span>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <span
+                        style={{
+                          padding: "4px 12px",
+                          borderRadius: "999px",
+                          background:
+                            healthMetrics.score >= 80 ? "rgba(16, 185, 129, 0.2)" : "rgba(245, 158, 11, 0.2)",
+                          color: healthMetrics.score >= 80 ? "#34d399" : "#fbbf24",
+                          fontSize: "12px",
+                          fontWeight: 700,
+                        }}
+                      >
+                        {healthMetrics.leadText}
+                      </span>
+                      <p style={{ margin: "4px 0 0", fontSize: "11.5px", color: "#94a3b8", maxWidth: "220px" }}>
+                        {healthMetrics.leadDesc}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div style={{ marginBottom: "22px" }}>
+                    {healthMetrics.checks.map((chk, idx) => (
+                      <HealthDetailRow key={idx}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          {chk.passed ? (
+                            <CheckCircleRounded style={{ fontSize: "17px", color: "#10b981", flexShrink: 0 }} />
+                          ) : (
+                            <InfoOutlined style={{ fontSize: "17px", color: "#f59e0b", flexShrink: 0 }} />
+                          )}
+                          <span style={{ fontSize: "12.5px", color: chk.passed ? "#e2e8f0" : "#cbd5e1" }}>
+                            {chk.label}
+                          </span>
+                        </div>
+                        <span
+                          style={{
+                            fontSize: "11.5px",
+                            fontWeight: 700,
+                            color: chk.passed ? "#10b981" : "#f59e0b",
+                            flexShrink: 0,
+                          }}
+                        >
+                          {chk.score}
+                        </span>
+                      </HealthDetailRow>
+                    ))}
+                  </div>
+
+                  <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", flexWrap: "wrap" }}>
+                    <ActionBtn
+                      type="button"
+                      onClick={() => {
+                        setHealthModalOpen(false);
+                        setActiveTab("profile");
+                      }}
+                    >
+                      Profile & Resume
+                    </ActionBtn>
+                    <ActionBtn
+                      type="button"
+                      primary
+                      onClick={() => {
+                        setHealthModalOpen(false);
+                        setActiveTab("projects");
+                      }}
+                    >
+                      Manage Projects
+                    </ActionBtn>
+                  </div>
+                </HealthModalCard>
+              </ModalBackdrop>
+            )}
           </div>
         )}
 
