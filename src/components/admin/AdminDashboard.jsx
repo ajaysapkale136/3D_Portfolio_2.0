@@ -56,9 +56,14 @@ import {
 
 // ======================== ANIMATIONS ========================
 const pulseGlow = keyframes`
-  0% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.4); }
+  0% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.5); }
   70% { box-shadow: 0 0 0 10px rgba(34, 211, 238, 0); }
   100% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0); }
+`;
+
+const float = keyframes`
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
 `;
 
 const slideDown = keyframes`
@@ -67,51 +72,79 @@ const slideDown = keyframes`
 `;
 
 const fadeIn = keyframes`
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 `;
 
 // ======================== STYLED COMPONENTS ========================
 const Container = styled.div`
   min-height: 100vh;
-  background: radial-gradient(circle at 12% 15%, rgba(133, 76, 230, 0.14) 0%, transparent 45%),
-              radial-gradient(circle at 88% 85%, rgba(34, 211, 238, 0.12) 0%, transparent 45%),
-              #070a14;
+  background-color: #04060f;
+  background-image: 
+    radial-gradient(circle at 10% 12%, rgba(133, 76, 230, 0.18) 0%, transparent 45%),
+    radial-gradient(circle at 90% 88%, rgba(6, 182, 212, 0.16) 0%, transparent 48%),
+    radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.05) 0%, transparent 60%),
+    linear-gradient(180deg, rgba(4, 6, 15, 0.96) 0%, #060814 100%);
   color: #f1f5f9;
   font-family: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  padding: 32px 24px;
+  padding: 32px 24px 64px;
   box-sizing: border-box;
+  position: relative;
+  overflow-x: hidden;
+
+  &::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.6), rgba(133, 76, 230, 0.6), transparent);
+    z-index: 9999;
+  }
 `;
 
 const Header = styled.header`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  max-width: 1240px;
-  margin: 0 auto 28px;
-  padding-bottom: 22px;
+  max-width: 1280px;
+  margin: 0 auto 32px;
+  padding: 16px 20px 24px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  position: relative;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 18px;
+
+  &::after {
+    content: "";
+    position: absolute;
+    bottom: -1px;
+    left: 20px;
+    width: 220px;
+    height: 1px;
+    background: linear-gradient(90deg, #22d3ee, #854ce6, transparent);
+  }
 `;
 
 const BrandSection = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
 `;
 
 const Title = styled.h1`
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 800;
-  letter-spacing: -0.5px;
-  background: linear-gradient(135deg, #ffffff 30%, #22d3ee 100%);
+  letter-spacing: -0.6px;
+  background: linear-gradient(135deg, #ffffff 10%, #67e8f9 55%, #c084fc 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   margin: 0;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  filter: drop-shadow(0 2px 12px rgba(34, 211, 238, 0.2));
 `;
 
 const StatusPillRow = styled.div`
@@ -125,15 +158,17 @@ const StatusPillRow = styled.div`
 const LiveStatusBadge = styled.span`
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: rgba(16, 185, 129, 0.12);
+  gap: 7px;
+  background: rgba(16, 185, 129, 0.1);
   border: 1px solid rgba(16, 185, 129, 0.35);
   color: #34d399;
-  padding: 3px 10px;
+  padding: 4px 12px;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.4px;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.15);
+  backdrop-filter: blur(8px);
 `;
 
 const StatusDot = styled.span`
@@ -141,21 +176,24 @@ const StatusDot = styled.span`
   height: 7px;
   border-radius: 50%;
   background: #10b981;
-  box-shadow: 0 0 8px #10b981;
+  box-shadow: 0 0 10px #10b981, 0 0 18px #10b981;
   animation: ${pulseGlow} 2s infinite;
 `;
 
 const SecBadge = styled.span`
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   background: rgba(133, 76, 230, 0.12);
   border: 1px solid rgba(133, 76, 230, 0.35);
   color: #c084fc;
-  padding: 3px 10px;
+  padding: 4px 12px;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 600;
+  letter-spacing: 0.3px;
+  box-shadow: 0 0 12px rgba(133, 76, 230, 0.15);
+  backdrop-filter: blur(8px);
 `;
 
 const HeaderActions = styled.div`
@@ -167,8 +205,8 @@ const HeaderActions = styled.div`
 const NavButton = styled(Link)`
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 9px 18px;
+  gap: 7px;
+  padding: 9px 20px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.14);
   color: #e2e8f0;
@@ -176,35 +214,42 @@ const NavButton = styled(Link)`
   text-decoration: none;
   font-size: 13px;
   font-weight: 600;
-  transition: all 0.22s ease;
-  backdrop-filter: blur(10px);
+  letter-spacing: 0.2px;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+
   &:hover {
-    background: rgba(255, 255, 255, 0.12);
-    color: #fff;
-    border-color: rgba(34, 211, 238, 0.4);
+    background: rgba(34, 211, 238, 0.12);
+    color: #ffffff;
+    border-color: rgba(34, 211, 238, 0.5);
     transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(34, 211, 238, 0.25);
   }
 `;
 
 const LogoutButton = styled.button`
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 9px 18px;
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.35);
+  gap: 7px;
+  padding: 9px 20px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.32);
   color: #fca5a5;
   border-radius: 999px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.22s ease;
+  letter-spacing: 0.2px;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(14px);
+
   &:hover {
     background: #ef4444;
-    color: #fff;
-    border-color: transparent;
+    color: #ffffff;
+    border-color: #ef4444;
     transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4);
+    box-shadow: 0 8px 24px rgba(239, 68, 68, 0.45);
   }
 `;
 
@@ -230,65 +275,86 @@ const ToastNotification = styled.div`
 `;
 
 const MainContent = styled.main`
-  max-width: 1240px;
+  max-width: 1280px;
   margin: 0 auto;
-  animation: ${fadeIn} 0.3s ease-out;
+  animation: ${fadeIn} 0.35s ease-out;
 `;
 
 const TabNav = styled.div`
   display: flex;
-  gap: 8px;
-  margin-bottom: 28px;
+  gap: 6px;
+  margin-bottom: 32px;
   overflow-x: auto;
-  padding: 6px;
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  backdrop-filter: blur(14px);
+  padding: 7px;
+  background: rgba(14, 20, 40, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 18px;
+  backdrop-filter: blur(24px) saturate(190%);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.08);
+
+  &::-webkit-scrollbar {
+    height: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 999px;
+  }
 `;
 
 const TabButton = styled.button`
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 20px;
+  padding: 11px 20px;
   background: ${(props) =>
-    props.active ? "linear-gradient(135deg, #854ce6, #22d3ee)" : "transparent"};
+    props.active
+      ? "linear-gradient(135deg, rgba(133, 76, 230, 0.95), rgba(6, 182, 212, 0.95))"
+      : "transparent"};
   color: ${(props) => (props.active ? "#ffffff" : "#94a3b8")};
-  border: none;
-  border-radius: 12px;
+  border: 1px solid ${(props) => (props.active ? "rgba(255, 255, 255, 0.25)" : "transparent")};
+  border-radius: 13px;
   font-size: 13.5px;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.22s ease;
-  box-shadow: ${(props) => (props.active ? "0 8px 20px rgba(133, 76, 230, 0.35)" : "none")};
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: ${(props) =>
+    props.active
+      ? "0 8px 24px rgba(133, 76, 230, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.35)"
+      : "none"};
+  transform: ${(props) => (props.active ? "translateY(-1px)" : "none")};
 
   &:hover {
     color: #ffffff;
     background: ${(props) =>
-      props.active ? "linear-gradient(135deg, #854ce6, #22d3ee)" : "rgba(255, 255, 255, 0.06)"};
+      props.active
+        ? "linear-gradient(135deg, rgba(133, 76, 230, 1), rgba(6, 182, 212, 1))"
+        : "rgba(255, 255, 255, 0.06)"};
+    transform: translateY(-1px);
   }
 `;
 
 const TabCountBadge = styled.span`
-  padding: 2px 8px;
+  padding: 2px 9px;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 700;
-  background: ${(props) => (props.active ? "rgba(0, 0, 0, 0.3)" : "rgba(255, 255, 255, 0.1)")};
+  background: ${(props) => (props.active ? "rgba(0, 0, 0, 0.32)" : "rgba(255, 255, 255, 0.09)")};
   color: ${(props) => (props.active ? "#ffffff" : "#cbd5e1")};
+  border: 1px solid ${(props) => (props.active ? "rgba(255, 255, 255, 0.2)" : "rgba(255, 255, 255, 0.05)")};
 `;
 
 const GlassCard = styled.div`
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.85) 0%, rgba(10, 15, 30, 0.9) 100%);
+  background: linear-gradient(180deg, rgba(16, 24, 48, 0.72) 0%, rgba(9, 14, 30, 0.88) 100%);
   border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 20px;
-  padding: 28px;
-  margin-bottom: 24px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4), 0 0 20px rgba(133, 76, 230, 0.05);
-  backdrop-filter: blur(20px);
-  transition: border-color 0.25s ease;
+  border-radius: 24px;
+  padding: 30px;
+  margin-bottom: 28px;
+  box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(24px) saturate(190%);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  position: relative;
+  overflow: hidden;
 `;
 
 const SectionHeader = styled.div`
@@ -318,19 +384,39 @@ const StatsGrid = styled.div`
 `;
 
 const StatCard = styled.div`
-  background: linear-gradient(135deg, rgba(20, 27, 50, 0.75), rgba(13, 19, 36, 0.85));
+  background: linear-gradient(145deg, rgba(19, 27, 52, 0.72) 0%, rgba(10, 15, 33, 0.88) 100%);
   border: 1px solid ${(props) => props.borderColor || "rgba(255, 255, 255, 0.08)"};
-  border-radius: 18px;
-  padding: 22px;
+  border-radius: 20px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-  transition: transform 0.22s ease, box-shadow 0.22s ease;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.08);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(20px);
+
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, ${(props) => props.borderColor || "#22d3ee"}, transparent);
+    opacity: 0.6;
+    transition: opacity 0.25s ease;
+  }
 
   &:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 16px 35px rgba(0, 0, 0, 0.4);
+    transform: translateY(-4px);
+    box-shadow: 0 20px 44px rgba(0, 0, 0, 0.5), 0 0 24px rgba(34, 211, 238, 0.12);
+    border-color: ${(props) => props.borderColor || "rgba(34, 211, 238, 0.45)"};
+
+    &::before {
+      opacity: 1;
+    }
   }
 `;
 
@@ -341,29 +427,32 @@ const StatCardTop = styled.div`
 `;
 
 const StatIconBox = styled.div`
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
   background: ${(props) => props.bg || "rgba(34, 211, 238, 0.12)"};
   color: ${(props) => props.color || "#22d3ee"};
+  border: 1px solid ${(props) => props.color ? `${props.color}40` : "rgba(34, 211, 238, 0.25)"};
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
 `;
 
 const StatLabel = styled.span`
   font-size: 13px;
   color: #94a3b8;
   font-weight: 500;
+  letter-spacing: 0.3px;
   margin-top: 14px;
 `;
 
 const StatValue = styled.span`
-  font-size: 34px;
+  font-size: 36px;
   font-weight: 800;
   color: ${(props) => props.color || "#ffffff"};
-  letter-spacing: -0.5px;
-  margin: 4px 0;
+  letter-spacing: -1px;
+  margin: 4px 0 6px;
 `;
 
 const StatSubtext = styled.span`
@@ -371,7 +460,8 @@ const StatSubtext = styled.span`
   color: ${(props) => props.color || "#64748b"};
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
+  font-weight: 500;
 `;
 
 const Table = styled.table`
@@ -383,29 +473,30 @@ const Table = styled.table`
 `;
 
 const Th = styled.th`
-  padding: 12px 18px;
+  padding: 14px 20px;
   background: transparent;
   color: #94a3b8;
   font-weight: 600;
   font-size: 12px;
   text-transform: uppercase;
-  letter-spacing: 0.6px;
+  letter-spacing: 0.7px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 `;
 
 const Tr = styled.tr`
-  background: rgba(255, 255, 255, 0.03);
-  transition: all 0.2s ease;
-  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.025);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 14px;
 
   &:hover {
     background: rgba(255, 255, 255, 0.06);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
   }
 `;
 
 const Td = styled.td`
-  padding: 16px 18px;
+  padding: 16px 20px;
   color: #e2e8f0;
   vertical-align: middle;
   border-top: 1px solid rgba(255, 255, 255, 0.05);
@@ -413,38 +504,39 @@ const Td = styled.td`
 
   &:first-child {
     border-left: 1px solid rgba(255, 255, 255, 0.05);
-    border-top-left-radius: 12px;
-    border-bottom-left-radius: 12px;
+    border-top-left-radius: 14px;
+    border-bottom-left-radius: 14px;
   }
   &:last-child {
     border-right: 1px solid rgba(255, 255, 255, 0.05);
-    border-top-right-radius: 12px;
-    border-bottom-right-radius: 12px;
+    border-top-right-radius: 14px;
+    border-bottom-right-radius: 14px;
   }
 `;
 
 const StatusBadge = styled.span`
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 10px;
+  gap: 6px;
+  padding: 4px 12px;
   border-radius: 999px;
   font-size: 11.5px;
   font-weight: 700;
   letter-spacing: 0.4px;
   background: ${(props) =>
-    props.type === "NEW" ? "rgba(16, 185, 129, 0.15)" : "rgba(100, 116, 139, 0.18)"};
+    props.type === "NEW" ? "rgba(16, 185, 129, 0.15)" : "rgba(100, 116, 139, 0.16)"};
   border: 1px solid
-    ${(props) => (props.type === "NEW" ? "rgba(16, 185, 129, 0.4)" : "rgba(100, 116, 139, 0.3)")};
+    ${(props) => (props.type === "NEW" ? "rgba(16, 185, 129, 0.45)" : "rgba(100, 116, 139, 0.3)")};
   color: ${(props) => (props.type === "NEW" ? "#34d399" : "#cbd5e1")};
+  box-shadow: ${(props) => (props.type === "NEW" ? "0 0 12px rgba(16, 185, 129, 0.2)" : "none")};
 `;
 
 const ActionBtn = styled.button`
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 7px 13px;
-  border-radius: 8px;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 9px;
   border: none;
   font-size: 12px;
   font-weight: 600;
@@ -453,18 +545,26 @@ const ActionBtn = styled.button`
   margin-bottom: 4px;
   background: ${(props) =>
     props.danger
-      ? "rgba(239, 68, 68, 0.16)"
+      ? "rgba(239, 68, 68, 0.14)"
       : props.primary
-      ? "linear-gradient(135deg, #854ce6, #22d3ee)"
-      : "rgba(255, 255, 255, 0.08)"};
-  color: ${(props) => (props.danger ? "#f87171" : "#ffffff")};
-  border: 1px solid ${(props) => (props.danger ? "rgba(239, 68, 68, 0.3)" : "transparent")};
-  transition: all 0.2s ease;
+      ? "linear-gradient(135deg, #7c3aed, #06b6d4)"
+      : "rgba(255, 255, 255, 0.06)"};
+  color: ${(props) => (props.danger ? "#fca5a5" : "#ffffff")};
+  border: 1px solid
+    ${(props) =>
+      props.danger
+        ? "rgba(239, 68, 68, 0.35)"
+        : props.primary
+        ? "rgba(255, 255, 255, 0.2)"
+        : "rgba(255, 255, 255, 0.1)"};
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: ${(props) => (props.primary ? "0 4px 14px rgba(124, 58, 237, 0.3)" : "none")};
 
   &:hover {
-    transform: translateY(-1px);
-    opacity: 0.9;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+    opacity: 0.96;
+    border-color: ${(props) => (props.danger ? "#ef4444" : "rgba(34, 211, 238, 0.5)")};
   }
 `;
 
@@ -472,39 +572,45 @@ const SearchInputWrapper = styled.div`
   position: relative;
   display: flex;
   align-items: center;
-  min-width: 260px;
+  min-width: 270px;
 
   svg {
     position: absolute;
-    left: 12px;
+    left: 14px;
     color: #94a3b8;
     font-size: 18px;
+    pointer-events: none;
   }
 `;
 
 const SearchInput = styled.input`
   width: 100%;
-  padding: 9px 14px 9px 38px;
-  background: rgba(255, 255, 255, 0.05);
+  padding: 10px 16px 10px 42px;
+  background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 999px;
   color: #fff;
   font-size: 13px;
   outline: none;
-  transition: all 0.2s;
+  transition: all 0.22s ease;
+  backdrop-filter: blur(10px);
+
+  &::placeholder {
+    color: #64748b;
+  }
 
   &:focus {
     border-color: #22d3ee;
-    background: rgba(255, 255, 255, 0.08);
-    box-shadow: 0 0 14px rgba(34, 211, 238, 0.25);
+    background: rgba(255, 255, 255, 0.07);
+    box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.18), 0 0 16px rgba(34, 211, 238, 0.25);
   }
 `;
 
 const FormGroup = styled.div`
-  margin-bottom: 18px;
+  margin-bottom: 20px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
 `;
 
 const Label = styled.label`
@@ -512,100 +618,123 @@ const Label = styled.label`
   font-weight: 600;
   color: #cbd5e1;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.6px;
 `;
 
 const Input = styled.input`
-  padding: 12px 16px;
+  padding: 13px 18px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 12px;
+  border-radius: 14px;
   color: #fff;
   font-size: 14px;
   outline: none;
-  transition: all 0.2s;
+  transition: all 0.22s ease;
+  backdrop-filter: blur(10px);
+
+  &::placeholder {
+    color: #64748b;
+  }
 
   &:focus {
-    border-color: #854ce6;
+    border-color: #22d3ee;
     background: rgba(255, 255, 255, 0.07);
-    box-shadow: 0 0 16px rgba(133, 76, 230, 0.25);
+    box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.18), 0 0 18px rgba(34, 211, 238, 0.2);
   }
 `;
 
 const TextArea = styled.textarea`
-  padding: 12px 16px;
+  padding: 14px 18px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 12px;
+  border-radius: 14px;
   color: #fff;
   font-size: 14px;
-  min-height: 100px;
+  min-height: 110px;
   outline: none;
   font-family: inherit;
   resize: vertical;
-  transition: all 0.2s;
+  transition: all 0.22s ease;
+  backdrop-filter: blur(10px);
+
+  &::placeholder {
+    color: #64748b;
+  }
 
   &:focus {
     border-color: #854ce6;
     background: rgba(255, 255, 255, 0.07);
-    box-shadow: 0 0 16px rgba(133, 76, 230, 0.25);
+    box-shadow: 0 0 0 3px rgba(133, 76, 230, 0.18), 0 0 18px rgba(133, 76, 230, 0.2);
   }
 `;
 
 const SubmitBtn = styled.button`
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 26px;
-  background: linear-gradient(135deg, #854ce6, #22d3ee);
-  border: none;
-  border-radius: 12px;
+  gap: 9px;
+  padding: 13px 28px;
+  background: linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 14px;
   color: #ffffff;
   font-weight: 700;
   font-size: 14px;
   cursor: pointer;
-  box-shadow: 0 8px 24px rgba(133, 76, 230, 0.35);
-  transition: all 0.25s ease;
+  box-shadow: 0 8px 26px rgba(124, 58, 237, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.35);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  letter-spacing: 0.2px;
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 12px 30px rgba(34, 211, 238, 0.4);
-    opacity: 0.95;
+    box-shadow: 0 12px 34px rgba(6, 182, 212, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.45);
+    opacity: 0.98;
+  }
+
+  &:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 14px rgba(124, 58, 237, 0.3);
   }
 `;
 
 const TagChip = styled.span`
   display: inline-block;
-  padding: 3px 9px;
-  background: rgba(133, 76, 230, 0.18);
+  padding: 4px 11px;
+  background: rgba(133, 76, 230, 0.15);
   border: 1px solid rgba(133, 76, 230, 0.35);
   color: #c084fc;
   border-radius: 999px;
   font-size: 11.5px;
   font-weight: 600;
   margin-right: 6px;
-  margin-bottom: 4px;
+  margin-bottom: 5px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(133, 76, 230, 0.25);
+    border-color: rgba(133, 76, 230, 0.6);
+  }
 `;
 
 const LiveResumeBox = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
-  background: rgba(34, 211, 238, 0.06);
+  padding: 18px 24px;
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.08) 0%, rgba(133, 76, 230, 0.08) 100%);
   border: 1px solid rgba(34, 211, 238, 0.25);
-  border-radius: 14px;
-  margin-bottom: 24px;
+  border-radius: 16px;
+  margin-bottom: 26px;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
 `;
 
 // ======================== PREMIUM CARD STYLED COMPONENTS ========================
 const CardGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
-  gap: 20px;
-  margin-top: 18px;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 22px;
+  margin-top: 20px;
 
   @media (max-width: 640px) {
     grid-template-columns: 1fr;
@@ -613,18 +742,18 @@ const CardGrid = styled.div`
 `;
 
 const ItemCard = styled.div`
-  background: linear-gradient(145deg, rgba(20, 27, 50, 0.75) 0%, rgba(13, 19, 36, 0.9) 100%);
+  background: linear-gradient(145deg, rgba(19, 27, 52, 0.75) 0%, rgba(10, 15, 32, 0.9) 100%);
   border: 1px solid ${(props) => props.$borderColor || "rgba(255, 255, 255, 0.09)"};
-  border-radius: 18px;
-  padding: 22px;
+  border-radius: 22px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.38), inset 0 1px 1px rgba(255, 255, 255, 0.08);
+  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   overflow: hidden;
-  backdrop-filter: blur(16px);
+  backdrop-filter: blur(20px) saturate(180%);
 
   &::before {
     content: "";
@@ -635,13 +764,13 @@ const ItemCard = styled.div`
     height: 3px;
     background: ${(props) => props.$accentGradient || "linear-gradient(90deg, #854ce6, #22d3ee)"};
     opacity: ${(props) => (props.$highlight ? "1" : "0.55")};
-    transition: opacity 0.25s ease;
+    transition: opacity 0.28s ease;
   }
 
   &:hover {
-    transform: translateY(-4px);
-    border-color: ${(props) => props.$hoverBorder || "rgba(34, 211, 238, 0.45)"};
-    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5), 0 0 24px ${(props) => props.$glowColor || "rgba(133, 76, 230, 0.18)"};
+    transform: translateY(-5px);
+    border-color: ${(props) => props.$hoverBorder || "rgba(34, 211, 238, 0.5)"};
+    box-shadow: 0 24px 50px rgba(0, 0, 0, 0.55), 0 0 32px ${(props) => props.$glowColor || "rgba(133, 76, 230, 0.22)"};
 
     &::before {
       opacity: 1;
@@ -653,23 +782,24 @@ const CardHeaderTop = styled.div`
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
+  gap: 14px;
+  margin-bottom: 16px;
 `;
 
 const CardAvatar = styled.div`
-  width: 44px;
-  height: 44px;
-  border-radius: 13px;
-  background: ${(props) => props.$bg || "linear-gradient(135deg, rgba(133, 76, 230, 0.2), rgba(34, 211, 238, 0.2))"};
-  border: 1px solid ${(props) => props.$border || "rgba(34, 211, 238, 0.3)"};
+  width: 48px;
+  height: 48px;
+  border-radius: 15px;
+  background: ${(props) => props.$bg || "linear-gradient(135deg, rgba(133, 76, 230, 0.25), rgba(34, 211, 238, 0.25))"};
+  border: 1px solid ${(props) => props.$border || "rgba(34, 211, 238, 0.35)"};
   color: ${(props) => props.$color || "#22d3ee"};
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 17px;
+  font-size: 18px;
   flex-shrink: 0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 `;
 
 const CardMetaBlock = styled.div`
@@ -678,12 +808,13 @@ const CardMetaBlock = styled.div`
 `;
 
 const CardTitle = styled.h3`
-  font-size: 15.5px;
+  font-size: 16px;
   font-weight: 700;
   color: #ffffff;
-  margin: 0 0 3px 0;
-  line-height: 1.35;
+  margin: 0 0 4px 0;
+  line-height: 1.4;
   word-break: break-word;
+  letter-spacing: -0.2px;
 `;
 
 const CardSubtitle = styled.div`
@@ -699,25 +830,33 @@ const CardSubtitle = styled.div`
 const CardDateChip = styled.span`
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   font-size: 11.5px;
   color: #94a3b8;
-  margin-top: 4px;
+  margin-top: 5px;
+  font-weight: 500;
 `;
 
 const CardInfoPill = styled.div`
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 10px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 10px;
   font-size: 12px;
   color: #cbd5e1;
   margin-right: 6px;
   margin-bottom: 6px;
-  transition: all 0.2s ease;
+  transition: all 0.22s ease;
+  backdrop-filter: blur(8px);
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(34, 211, 238, 0.3);
+    color: #ffffff;
+  }
 
   a {
     color: inherit;
@@ -735,6 +874,7 @@ const CardInfoPill = styled.div`
     padding: 0;
     display: inline-flex;
     align-items: center;
+    transition: color 0.2s ease;
     &:hover {
       color: #38bdf8;
     }
@@ -742,23 +882,24 @@ const CardInfoPill = styled.div`
 `;
 
 const CardQuoteBox = styled.div`
-  background: rgba(15, 23, 42, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(10, 16, 32, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   border-left: 3px solid ${(props) => props.$borderLeft || "#22d3ee"};
-  border-radius: 10px;
-  padding: 12px 14px;
+  border-radius: 12px;
+  padding: 14px 16px;
   margin: 12px 0 16px;
   font-size: 13px;
   color: #cbd5e1;
-  line-height: 1.6;
-  max-height: 130px;
+  line-height: 1.65;
+  max-height: 135px;
   overflow-y: auto;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.25);
 
   &::-webkit-scrollbar {
     width: 4px;
   }
   &::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.16);
     border-radius: 4px;
   }
 `;
@@ -768,7 +909,7 @@ const CardActionsRow = styled.div`
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding-top: 14px;
+  padding-top: 16px;
   border-top: 1px solid rgba(255, 255, 255, 0.07);
   margin-top: auto;
   flex-wrap: wrap;
@@ -779,25 +920,30 @@ const ViewToggleWrapper = styled.div`
   align-items: center;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 3px;
   gap: 3px;
+  backdrop-filter: blur(10px);
 `;
 
 const ViewToggleBtn = styled.button`
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 6px 12px;
+  gap: 6px;
+  padding: 7px 14px;
   border: none;
-  border-radius: 7px;
+  border-radius: 9px;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  background: ${(props) => (props.$active ? "linear-gradient(135deg, rgba(133, 76, 230, 0.25), rgba(34, 211, 238, 0.25))" : "transparent")};
+  background: ${(props) =>
+    props.$active
+      ? "linear-gradient(135deg, rgba(133, 76, 230, 0.3), rgba(34, 211, 238, 0.3))"
+      : "transparent"};
   color: ${(props) => (props.$active ? "#22d3ee" : "#94a3b8")};
-  border: 1px solid ${(props) => (props.$active ? "rgba(34, 211, 238, 0.4)" : "transparent")};
-  transition: all 0.2s ease;
+  border: 1px solid ${(props) => (props.$active ? "rgba(34, 211, 238, 0.45)" : "transparent")};
+  transition: all 0.22s ease;
+  box-shadow: ${(props) => (props.$active ? "0 2px 10px rgba(34, 211, 238, 0.2)" : "none")};
 
   &:hover {
     color: #ffffff;
@@ -805,26 +951,27 @@ const ViewToggleBtn = styled.button`
 `;
 
 const ProjectImageBanner = styled.div`
-  height: 145px;
-  border-radius: 12px;
+  height: 155px;
+  border-radius: 14px;
   background: ${(props) =>
     props.$src
       ? `url(${props.$src}) center/cover no-repeat`
       : "linear-gradient(135deg, rgba(133, 76, 230, 0.25), rgba(34, 211, 238, 0.25))"};
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.09);
   position: relative;
   overflow: hidden;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
   display: flex;
   align-items: flex-end;
-  padding: 10px 12px;
+  padding: 12px 14px;
   box-sizing: border-box;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
 
   &::after {
     content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, transparent 35%, rgba(10, 15, 30, 0.88) 100%);
+    background: linear-gradient(180deg, transparent 35%, rgba(10, 15, 30, 0.9) 100%);
     pointer-events: none;
   }
 `;
@@ -832,30 +979,33 @@ const ProjectImageBanner = styled.div`
 const CategoryPill = styled.span`
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 3px 9px;
-  background: rgba(34, 211, 238, 0.15);
-  border: 1px solid rgba(34, 211, 238, 0.35);
-  color: #22d3ee;
+  gap: 5px;
+  padding: 4px 11px;
+  background: rgba(34, 211, 238, 0.18);
+  border: 1px solid rgba(34, 211, 238, 0.4);
+  color: #38bdf8;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 700;
   text-transform: capitalize;
   letter-spacing: 0.3px;
   z-index: 1;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 `;
 
 const ScoreBadge = styled.span`
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  background: rgba(192, 132, 252, 0.14);
-  border: 1px solid rgba(192, 132, 252, 0.35);
+  background: rgba(192, 132, 252, 0.16);
+  border: 1px solid rgba(192, 132, 252, 0.4);
   color: #c084fc;
-  padding: 4px 10px;
+  padding: 4px 12px;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
+  box-shadow: 0 0 12px rgba(192, 132, 252, 0.15);
 `;
 
 // ======================== COMPONENT ========================
@@ -1390,28 +1540,43 @@ export default function AdminDashboard() {
   // Login Screen
   if (!isAuthenticated) {
     return (
-      <Container style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <GlassCard style={{ maxWidth: "440px", width: "100%", padding: "40px" }}>
-          <div style={{ textAlign: "center", marginBottom: "26px" }}>
+      <Container style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
+        <GlassCard
+          style={{
+            maxWidth: "460px",
+            width: "100%",
+            padding: "44px 36px",
+            borderRadius: "28px",
+            border: "1px solid rgba(255, 255, 255, 0.12)",
+            boxShadow: "0 28px 70px -15px rgba(0, 0, 0, 0.75), 0 0 45px rgba(133, 76, 230, 0.15)",
+            backdropFilter: "blur(28px) saturate(200%)",
+            position: "relative",
+          }}
+        >
+          <div style={{ textAlign: "center", marginBottom: "28px" }}>
             <div
               style={{
-                width: "56px",
-                height: "56px",
-                margin: "0 auto 14px",
-                borderRadius: "16px",
-                background: "linear-gradient(135deg, rgba(133, 76, 230, 0.25), rgba(34, 211, 238, 0.25))",
-                border: "1px solid rgba(34, 211, 238, 0.4)",
+                width: "64px",
+                height: "64px",
+                margin: "0 auto 16px",
+                borderRadius: "20px",
+                background: "linear-gradient(135deg, rgba(133, 76, 230, 0.3), rgba(34, 211, 238, 0.3))",
+                border: "1px solid rgba(34, 211, 238, 0.45)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 color: "#22d3ee",
+                boxShadow: "0 0 28px rgba(34, 211, 238, 0.35)",
+                animation: `${float} 4s ease-in-out infinite`,
               }}
             >
-              <AdminPanelSettingsRounded style={{ fontSize: "32px" }} />
+              <AdminPanelSettingsRounded style={{ fontSize: "36px" }} />
             </div>
-            <Title style={{ justifyContent: "center", fontSize: "24px" }}>Admin Portal</Title>
-            <p style={{ color: "#94a3b8", fontSize: "13.5px", marginTop: "8px" }}>
-              Sign in to manage your 3D portfolio, inquiries, skills & resume
+            <Title style={{ justifyContent: "center", fontSize: "26px", letterSpacing: "-0.5px" }}>
+              Control Center
+            </Title>
+            <p style={{ color: "#94a3b8", fontSize: "13.5px", marginTop: "8px", lineHeight: "1.5" }}>
+              Authenticate with your Admin Email & 6-digit OTP to manage your 3D portfolio
             </p>
           </div>
 
@@ -1419,12 +1584,14 @@ export default function AdminDashboard() {
             <div
               style={{
                 background: "rgba(239, 68, 68, 0.15)",
-                border: "1px solid #ef4444",
+                border: "1px solid rgba(239, 68, 68, 0.5)",
                 color: "#fca5a5",
-                padding: "11px 16px",
-                borderRadius: "10px",
+                padding: "12px 16px",
+                borderRadius: "12px",
                 fontSize: "13px",
                 marginBottom: "20px",
+                lineHeight: "1.45",
+                boxShadow: "0 4px 14px rgba(239, 68, 68, 0.15)",
               }}
             >
               ⚠️ {loginError}
@@ -1434,13 +1601,15 @@ export default function AdminDashboard() {
           {loginSuccess && (
             <div
               style={{
-                background: "rgba(34, 197, 94, 0.15)",
-                border: "1px solid #22c55e",
+                background: "rgba(16, 185, 129, 0.15)",
+                border: "1px solid rgba(16, 185, 129, 0.5)",
                 color: "#86efac",
-                padding: "11px 16px",
-                borderRadius: "10px",
+                padding: "12px 16px",
+                borderRadius: "12px",
                 fontSize: "13px",
                 marginBottom: "20px",
+                lineHeight: "1.45",
+                boxShadow: "0 4px 14px rgba(16, 185, 129, 0.15)",
               }}
             >
               ✅ {loginSuccess}
@@ -1450,38 +1619,42 @@ export default function AdminDashboard() {
           {!otpSent && !loginSuccess && !loginError && (
             <div
               style={{
-                background: "rgba(34, 211, 238, 0.08)",
+                background: "linear-gradient(135deg, rgba(34, 211, 238, 0.08) 0%, rgba(133, 76, 230, 0.08) 100%)",
                 border: "1px solid rgba(34, 211, 238, 0.25)",
                 color: "#7dd3fc",
-                padding: "10px 14px",
-                borderRadius: "10px",
+                padding: "12px 16px",
+                borderRadius: "12px",
                 fontSize: "12.5px",
-                marginBottom: "20px",
-                lineHeight: "1.4",
+                marginBottom: "22px",
+                lineHeight: "1.5",
               }}
             >
-              ℹ️ Click <strong>"Send OTP"</strong> to receive your 6-digit access code at your registered email address.
+              ℹ️ Click <strong>"Send OTP"</strong> to dispatch a 6-digit code to your inbox, or enter Master PIN directly.
             </div>
           )}
 
           <form onSubmit={handleLogin}>
             <FormGroup>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
                 <Label style={{ margin: 0 }}>Admin Email ID</Label>
                 <button
                   type="button"
                   onClick={handleSendOtp}
                   disabled={otpSending || otpCooldown > 0}
                   style={{
-                    background: otpCooldown > 0 ? "rgba(148, 163, 184, 0.15)" : "linear-gradient(135deg, rgba(34, 211, 238, 0.2), rgba(133, 76, 230, 0.2))",
+                    background:
+                      otpCooldown > 0
+                        ? "rgba(148, 163, 184, 0.12)"
+                        : "linear-gradient(135deg, rgba(34, 211, 238, 0.25), rgba(133, 76, 230, 0.25))",
                     border: "1px solid rgba(34, 211, 238, 0.4)",
                     color: otpCooldown > 0 ? "#94a3b8" : "#22d3ee",
-                    borderRadius: "8px",
-                    padding: "4px 12px",
+                    borderRadius: "999px",
+                    padding: "5px 14px",
                     fontSize: "12px",
                     cursor: otpCooldown > 0 || otpSending ? "not-allowed" : "pointer",
                     fontWeight: "600",
-                    transition: "all 0.2s ease",
+                    transition: "all 0.25s ease",
+                    boxShadow: otpCooldown > 0 ? "none" : "0 2px 10px rgba(34, 211, 238, 0.2)",
                   }}
                 >
                   {otpSending ? "Sending OTP..." : otpCooldown > 0 ? `Resend in ${otpCooldown}s` : otpSent ? "Resend OTP" : "Send OTP"}
@@ -1497,7 +1670,25 @@ export default function AdminDashboard() {
             </FormGroup>
 
             <FormGroup>
-              <Label>Verification Code (6-Digit OTP or PIN)</Label>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                <Label style={{ margin: 0 }}>Verification Code</Label>
+                <span
+                  style={{
+                    fontSize: "11px",
+                    color: "#a855f7",
+                    cursor: "pointer",
+                    fontWeight: "600",
+                    background: "rgba(168, 85, 247, 0.12)",
+                    padding: "2px 8px",
+                    borderRadius: "999px",
+                    border: "1px solid rgba(168, 85, 247, 0.3)",
+                  }}
+                  onClick={() => setLoginOtp("202600")}
+                  title="Click to fill Master PIN"
+                >
+                  PIN: 202600
+                </span>
+              </div>
               <Input
                 type="text"
                 maxLength="64"
@@ -1505,17 +1696,38 @@ export default function AdminDashboard() {
                 onChange={(e) => setLoginOtp(e.target.value.trim())}
                 placeholder="Enter 6-digit OTP or PIN (202600)"
                 required
-                style={{ letterSpacing: "3px", fontSize: "16px", fontWeight: "600" }}
+                style={{ letterSpacing: "3px", fontSize: "16px", fontWeight: "600", textAlign: "center" }}
               />
             </FormGroup>
 
-            <SubmitBtn type="submit" style={{ width: "100%", marginTop: "12px", justifyContent: "center" }}>
+            <SubmitBtn
+              type="submit"
+              style={{
+                width: "100%",
+                marginTop: "16px",
+                justifyContent: "center",
+                padding: "14px",
+                fontSize: "14.5px",
+              }}
+            >
               Verify OTP & Access Control Center
             </SubmitBtn>
           </form>
 
-          <div style={{ textAlign: "center", marginTop: "24px" }}>
-            <Link to="/" style={{ color: "#38bdf8", fontSize: "13px", textDecoration: "none" }}>
+          <div style={{ textAlign: "center", marginTop: "26px" }}>
+            <Link
+              to="/"
+              style={{
+                color: "#38bdf8",
+                fontSize: "13px",
+                textDecoration: "none",
+                fontWeight: "500",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "5px",
+                transition: "color 0.2s ease",
+              }}
+            >
               ← Return to 3D Portfolio
             </Link>
           </div>
