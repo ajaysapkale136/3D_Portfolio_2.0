@@ -75,6 +75,9 @@ public class PortfolioChatService {
         if (cleanMessage.isEmpty()) {
             throw new IllegalArgumentException("Chat message cannot be empty.");
         }
+        if (cleanMessage.length() > 1000) {
+            throw new IllegalArgumentException("Chat message exceeds the maximum allowed length of 1000 characters.");
+        }
 
         // Live portfolio context pulled directly from current database state
         String portfolioContext = contextService.buildContext();

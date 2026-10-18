@@ -47,6 +47,6 @@ app:
   contact:
     notification-email: ${NOTIFICATION_EMAIL:ajaysapkale136@gmail.com}
   admin:
-    username: ${ADMIN_USERNAME:admin}
-    password: ${ADMIN_PASSWORD:admin123}
+    email: ${ADMIN_EMAIL:ajaysapkale136@gmail.com}
     token-secret: ${ADMIN_SECRET:ajay-secret-key-3d-portfolio-2026}
+    otp-expiry-minutes: ${OTP_EXPIRY_MINUTES:10}

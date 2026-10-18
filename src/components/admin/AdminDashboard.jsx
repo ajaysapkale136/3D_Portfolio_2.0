@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import styled, { keyframes } from "styled-components";
 import { Link } from "react-router-dom";
 import {
+  adminSendOtp,
   adminLogin,
   adminVerify,
   adminLogout,
@@ -863,10 +864,14 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
 
-  // Login credentials state
-  const [loginUsername, setLoginUsername] = useState("admin");
-  const [loginPassword, setLoginPassword] = useState("");
+  // Login credentials state (Email + OTP based 2FA)
+  const [loginEmail, setLoginEmail] = useState("ajaysapkale136@gmail.com");
+  const [loginOtp, setLoginOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpSending, setOtpSending] = useState(false);
+  const [otpCooldown, setOtpCooldown] = useState(0);
   const [loginError, setLoginError] = useState("");
+  const [loginSuccess, setLoginSuccess] = useState("");
 
   // Data states
   const [stats, setStats] = useState(null);
@@ -966,16 +971,47 @@ export default function AdminDashboard() {
     setLoading(false);
   };
 
+  useEffect(() => {
+    if (otpCooldown <= 0) return;
+    const timer = setTimeout(() => setOtpCooldown((prev) => prev - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [otpCooldown]);
+
+  const handleSendOtp = async () => {
+    setLoginError("");
+    setLoginSuccess("");
+    if (!loginEmail || !loginEmail.includes("@")) {
+      setLoginError("Please enter a valid admin email address.");
+      return;
+    }
+    setOtpSending(true);
+    try {
+      const res = await adminSendOtp(loginEmail);
+      setOtpSent(true);
+      setOtpCooldown(60);
+      setLoginSuccess(res.message || "Verification code dispatched to your email! Please check your inbox.");
+    } catch (err) {
+      setLoginError(err.message || "Failed to dispatch verification code.");
+    } finally {
+      setOtpSending(false);
+    }
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoginError("");
+    setLoginSuccess("");
+    if (!loginEmail || !loginOtp) {
+      setLoginError("Please provide your Admin Email and 6-digit OTP.");
+      return;
+    }
     try {
-      await adminLogin(loginUsername, loginPassword);
+      await adminLogin(loginEmail, loginOtp);
       setIsAuthenticated(true);
       loadAllDashboardData();
       showNotification("Welcome back, Ajay! Admin session active.");
     } catch (err) {
-      setLoginError(err.message || "Invalid credentials");
+      setLoginError(err.message || "Invalid verification code");
     }
   };
 
@@ -1394,31 +1430,69 @@ export default function AdminDashboard() {
             </div>
           )}
 
+          {loginSuccess && (
+            <div
+              style={{
+                background: "rgba(34, 197, 94, 0.15)",
+                border: "1px solid #22c55e",
+                color: "#86efac",
+                padding: "11px 16px",
+                borderRadius: "10px",
+                fontSize: "13px",
+                marginBottom: "20px",
+              }}
+            >
+              ✅ {loginSuccess}
+            </div>
+          )}
+
           <form onSubmit={handleLogin}>
             <FormGroup>
-              <Label>Username</Label>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                <Label style={{ margin: 0 }}>Admin Email ID</Label>
+                <button
+                  type="button"
+                  onClick={handleSendOtp}
+                  disabled={otpSending || otpCooldown > 0}
+                  style={{
+                    background: otpCooldown > 0 ? "rgba(148, 163, 184, 0.15)" : "linear-gradient(135deg, rgba(34, 211, 238, 0.2), rgba(133, 76, 230, 0.2))",
+                    border: "1px solid rgba(34, 211, 238, 0.4)",
+                    color: otpCooldown > 0 ? "#94a3b8" : "#22d3ee",
+                    borderRadius: "8px",
+                    padding: "4px 12px",
+                    fontSize: "12px",
+                    cursor: otpCooldown > 0 || otpSending ? "not-allowed" : "pointer",
+                    fontWeight: "600",
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  {otpSending ? "Sending OTP..." : otpCooldown > 0 ? `Resend in ${otpCooldown}s` : otpSent ? "Resend OTP" : "Send OTP"}
+                </button>
+              </div>
               <Input
-                type="text"
-                value={loginUsername}
-                onChange={(e) => setLoginUsername(e.target.value)}
-                placeholder="admin"
+                type="email"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                placeholder="ajaysapkale136@gmail.com"
                 required
               />
             </FormGroup>
 
             <FormGroup>
-              <Label>Password</Label>
+              <Label>Verification Code (6-Digit OTP)</Label>
               <Input
-                type="password"
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
-                placeholder="••••••••"
+                type="text"
+                maxLength="6"
+                value={loginOtp}
+                onChange={(e) => setLoginOtp(e.target.value.replace(/[^0-9]/g, ""))}
+                placeholder="Enter 6-digit OTP from email"
                 required
+                style={{ letterSpacing: "4px", fontSize: "16px", fontWeight: "600" }}
               />
             </FormGroup>
 
             <SubmitBtn type="submit" style={{ width: "100%", marginTop: "12px", justifyContent: "center" }}>
-              Sign In to Control Center
+              Verify OTP & Access Control Center
             </SubmitBtn>
           </form>
 

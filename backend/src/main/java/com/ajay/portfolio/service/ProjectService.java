@@ -58,6 +58,19 @@ public class ProjectService {
         return projectRepository.findAll();
     }
 
+    public PagedResponse<ProjectEntity> getPagedProjects(int page, int size) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(Math.max(0, page), Math.max(1, Math.min(size, 100)));
+        org.springframework.data.domain.Page<ProjectEntity> result = projectRepository.findAll(pageable);
+        return new PagedResponse<>(
+                result.getContent(),
+                result.getNumber(),
+                result.getSize(),
+                result.getTotalElements(),
+                result.getTotalPages(),
+                result.isLast()
+        );
+    }
+
     public ProjectDto getProjectById(Long id) {
         return projectRepository.findByIdAndPublishedTrue(id)
                 .map(this::toProjectDto)
@@ -283,6 +296,19 @@ public class ProjectService {
 
     public List<ContactMessage> getAllMessages() {
         return contactMessageRepository.findAllByOrderByCreatedAtDesc();
+    }
+
+    public PagedResponse<ContactMessage> getPagedMessages(int page, int size) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(Math.max(0, page), Math.max(1, Math.min(size, 100)));
+        org.springframework.data.domain.Page<ContactMessage> result = contactMessageRepository.findAllByOrderByCreatedAtDesc(pageable);
+        return new PagedResponse<>(
+                result.getContent(),
+                result.getNumber(),
+                result.getSize(),
+                result.getTotalElements(),
+                result.getTotalPages(),
+                result.isLast()
+        );
     }
 
     @Transactional

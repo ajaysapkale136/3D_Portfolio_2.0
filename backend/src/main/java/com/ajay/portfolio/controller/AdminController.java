@@ -43,6 +43,15 @@ public class AdminController {
         return ResponseEntity.ok(projectService.getAllMessages());
     }
 
+    @GetMapping("/messages/paged")
+    public ResponseEntity<PagedResponse<ContactMessage>> getPagedMessages(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        adminAuthService.verifyOrThrow(authHeader);
+        return ResponseEntity.ok(projectService.getPagedMessages(page, size));
+    }
+
     @PutMapping("/messages/{id}/status")
     public ResponseEntity<ContactMessage> updateMessageStatus(
             @PathVariable Long id,
@@ -67,6 +76,15 @@ public class AdminController {
             @RequestHeader(value = "Authorization", required = false) String authHeader) {
         adminAuthService.verifyOrThrow(authHeader);
         return ResponseEntity.ok(projectService.getAllProjectsAdmin());
+    }
+
+    @GetMapping("/projects/paged")
+    public ResponseEntity<PagedResponse<ProjectEntity>> getPagedProjects(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        adminAuthService.verifyOrThrow(authHeader);
+        return ResponseEntity.ok(projectService.getPagedProjects(page, size));
     }
 
     @PostMapping("/projects")

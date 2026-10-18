@@ -639,43 +639,92 @@ function getAdminAuthHeader() {
 }
 
 /**
- * Login as Admin (supports local fallback for "admin" / "admin123")
+ * Request a 6-digit verification code to the registered admin email
  */
-export async function adminLogin(username, password) {
+export async function adminSendOtp(email) {
+  const cleanEmail = (email || "").trim().toLowerCase();
+  if (!cleanEmail || !cleanEmail.includes("@")) {
+    throw new Error("Please provide a valid admin email address.");
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/auth/send-otp`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({ email: cleanEmail }),
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.message || data.error || "Failed to dispatch verification OTP.");
+  }
+  return data;
+}
+
+/**
+ * Authenticate Admin via Email ID and 6-digit OTP
+ */
+export async function adminLogin(email, otp) {
+  const cleanEmail = (email || "").trim().toLowerCase();
+  const cleanOtp = (otp || "").trim();
+
+  if (!cleanEmail) {
+    throw new Error("Admin email address is required.");
+  }
+  if (!cleanOtp) {
+    throw new Error("Verification code (OTP) is required.");
+  }
+
+  // 1. Try verify-otp endpoint
   try {
-    const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+    const response = await fetch(`${API_BASE_URL}/api/auth/verify-otp`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ email: cleanEmail, otp: cleanOtp }),
     });
 
-    if (response.ok) {
-      const data = await response.json();
-      if (data && data.token) {
-        if (isBrowser) localStorage.setItem("portfolio_admin_token", data.token);
-      }
+    const data = await response.json().catch(() => ({}));
+    if (response.ok && data && data.token) {
+      if (isBrowser) localStorage.setItem("portfolio_admin_token", data.token);
       return data;
     }
-  } catch (_) {
-    // Backend offline or Vercel standalone
+
+    if (!response.ok && response.status !== 404) {
+      throw new Error(data.message || data.error || "Invalid verification code.");
+    }
+  } catch (err) {
+    if (err.message && !err.message.includes("fetch") && !err.message.includes("Failed to fetch")) {
+      throw err;
+    }
   }
 
-  // Resilient offline admin authentication
-  if (username === "admin" && password === "admin123") {
-    const localToken = "portfolio_admin_session_" + Date.now();
-    if (isBrowser) localStorage.setItem("portfolio_admin_token", localToken);
-    return {
-      token: localToken,
-      user: { username: "admin", role: "ADMIN" },
-      success: true,
-      message: "Admin authentication successful",
-    };
+  // 2. Fallback to /api/auth/login endpoint
+  const loginResp = await fetch(`${API_BASE_URL}/api/auth/login`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      email: cleanEmail,
+      otp: cleanOtp,
+      username: cleanEmail,
+      password: cleanOtp,
+    }),
+  });
+
+  const loginData = await loginResp.json().catch(() => ({}));
+  if (loginResp.ok && loginData && loginData.token) {
+    if (isBrowser) localStorage.setItem("portfolio_admin_token", loginData.token);
+    return loginData;
   }
 
-  throw new Error("Invalid username or password");
+  throw new Error(loginData.message || loginData.error || "Invalid verification code. Please check your email.");
 }
 
 /**

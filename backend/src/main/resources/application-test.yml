@@ -31,3 +31,7 @@ app:
   chat:
     max-message-length: 1000
     rate-limit-per-minute: 50
+  admin:
+    email: admin.test@portfolio.com
+    token-secret: test-secret-key
+    otp-expiry-minutes: 10

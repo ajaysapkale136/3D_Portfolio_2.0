@@ -135,4 +135,43 @@ public class EmailNotificationService {
             log.info("Visitor read receipt notification simulated for {} (configure SMTP to send live):\n{}", message.getEmail(), body);
         }
     }
+
+    public void sendAdminLoginOtp(String toEmail, String otp) {
+        String subject = "[Portfolio Security] Your Admin Login Verification Code: " + otp;
+        String body = String.format("""
+                Hello Ajay,
+
+                Your one-time verification code (OTP) for accessing the 3D Portfolio Admin Portal is:
+
+                ======================================
+                               %s
+                ======================================
+
+                • This code is valid for 10 minutes.
+                • It can only be used once.
+                • If you did not initiate this login request, your account is safe; please disregard this email.
+
+                Security Tip: Never share this OTP with anyone.
+
+                Best regards,
+                Ajay's 3D Portfolio Security System
+                """, otp);
+
+        if (mailSender != null && mailSenderUsername != null && !mailSenderUsername.isBlank()) {
+            try {
+                SimpleMailMessage mailMessage = new SimpleMailMessage();
+                mailMessage.setFrom(mailSenderUsername);
+                mailMessage.setTo(toEmail);
+                mailMessage.setSubject(subject);
+                mailMessage.setText(body);
+
+                mailSender.send(mailMessage);
+                log.info("Dispatched admin login OTP verification email to {}", toEmail);
+            } catch (Exception ex) {
+                log.warn("Failed to dispatch OTP email via SMTP (logged for development): {}", ex.getMessage());
+            }
+        } else {
+            log.info("Admin login OTP simulated for {}: OTP={}", toEmail, otp);
+        }
+    }
 }

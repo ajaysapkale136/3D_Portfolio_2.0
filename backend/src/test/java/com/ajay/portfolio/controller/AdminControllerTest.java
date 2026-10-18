@@ -1,5 +1,6 @@
 package com.ajay.portfolio.controller;
 
+import com.ajay.portfolio.security.AdminAuthService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -26,12 +27,21 @@ public class AdminControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private AdminAuthService adminAuthService;
+
     @Test
     void testAdminEndpointsRequireAuth() throws Exception {
         mockMvc.perform(get("/api/admin/messages"))
                 .andExpect(status().isUnauthorized());
 
+        mockMvc.perform(get("/api/admin/messages/paged"))
+                .andExpect(status().isUnauthorized());
+
         mockMvc.perform(get("/api/admin/projects"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/api/admin/projects/paged"))
                 .andExpect(status().isUnauthorized());
 
         mockMvc.perform(get("/api/admin/stats"))
@@ -39,37 +49,114 @@ public class AdminControllerTest {
     }
 
     @Test
-    void testAdminLoginAndAccess() throws Exception {
-        // 1. Perform Admin Login
-        String loginJson = """
+    void testSendOtpUnauthorizedEmailFails() throws Exception {
+        String json = """
                 {
-                    "username": "admin",
-                    "password": "admin123"
+                    "email": "unauthorized.attacker@example.com"
                 }
                 """;
 
-        MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post("/api/auth/send-otp")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(loginJson))
+                        .content(json))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void testSendOtpInvalidEmailReturnsBadRequest() throws Exception {
+        String json = """
+                {
+                    "email": "not-an-email"
+                }
+                """;
+
+        mockMvc.perform(post("/api/auth/send-otp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    void testVerifyOtpInvalidFormatReturnsBadRequest() throws Exception {
+        String json = """
+                {
+                    "email": "admin.test@portfolio.com",
+                    "otp": "123"
+                }
+                """;
+
+        mockMvc.perform(post("/api/auth/verify-otp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    void testVerifyOtpIncorrectCodeFails() throws Exception {
+        String json = """
+                {
+                    "email": "admin.test@portfolio.com",
+                    "otp": "000000"
+                }
+                """;
+
+        mockMvc.perform(post("/api/auth/verify-otp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void testAdminOtpFlowAndAccess() throws Exception {
+        // 1. Dispatch OTP for authorized test admin email
+        String otp = adminAuthService.generateAndStoreOtpForTest("admin.test@portfolio.com");
+
+        // 2. Verify OTP
+        String verifyJson = String.format("""
+                {
+                    "email": "admin.test@portfolio.com",
+                    "otp": "%s"
+                }
+                """, otp);
+
+        MvcResult loginResult = mockMvc.perform(post("/api/auth/verify-otp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(verifyJson))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").isString())
+                .andExpect(jsonPath("$.username").value("admin.test@portfolio.com"))
                 .andReturn();
 
         JsonNode jsonNode = objectMapper.readTree(loginResult.getResponse().getContentAsString());
         String token = jsonNode.get("token").asText();
 
-        // 2. Access protected endpoint with Bearer token
+        // 3. Verify session token via /api/auth/verify
+        mockMvc.perform(get("/api/auth/verify")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.authenticated").value(true))
+                .andExpect(jsonPath("$.role").value("ADMIN"));
+
+        // 4. Access protected stats endpoint
         mockMvc.perform(get("/api/admin/stats")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.healthStatus").value("UP"));
 
-        // 3. Access admin messages
-        mockMvc.perform(get("/api/admin/messages")
+        // 5. Access paged messages and projects
+        mockMvc.perform(get("/api/admin/messages/paged?page=0&size=5")
                         .header("Authorization", "Bearer " + token))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray());
 
-        // 4. Update Resume Link & Bio via Admin Endpoint
+        mockMvc.perform(get("/api/admin/projects/paged?page=0&size=5")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray());
+
+        // 6. Update Resume Link & Bio via Admin Endpoint
         String bioUpdateJson = """
                 {
                     "name": "Ajay Sapkale",
@@ -88,9 +175,20 @@ public class AdminControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resume").value("https://drive.google.com/file/d/test-updated-resume/view"));
 
-        // 5. Verify public bio reflects the updated resume link!
+        // 7. Verify public bio reflects the updated resume link!
         mockMvc.perform(get("/api/bio"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resume").value("https://drive.google.com/file/d/test-updated-resume/view"));
+
+        // 8. Logout
+        mockMvc.perform(post("/api/auth/logout")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+
+        // 9. After logout, token must be rejected
+        mockMvc.perform(get("/api/auth/verify")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.authenticated").value(false));
     }
 }
