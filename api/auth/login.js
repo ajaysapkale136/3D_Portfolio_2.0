@@ -1,6 +1,6 @@
 // Vercel Serverless Function: /api/auth/login
 const verifyOtpHandler = require("./verify-otp");
-const { tokenStore } = require("./_store");
+const { tokenStore, isMasterCode } = require("./_store");
 const crypto = require("crypto");
 
 module.exports = async function handler(req, res) {
@@ -17,28 +17,24 @@ module.exports = async function handler(req, res) {
   }
 
   const { email, otp, username, password } = req.body || {};
+  const cleanEmail = (email || username || "ajaysapkale136@gmail.com").trim().toLowerCase();
+  const candidate = String(otp || password || "").trim();
 
-  // If OTP is provided, verify via verify-otp
-  if (otp) {
-    req.body.email = email || username;
-    return verifyOtpHandler(req, res);
-  }
-
-  // If admin secret is provided
-  const adminSecret = process.env.ADMIN_SECRET || "ajay-secret-key-3d-portfolio-2026";
-  if (password && password === adminSecret) {
+  // If Master PIN / secret is provided in either field
+  if (isMasterCode(candidate)) {
     const token = "adm_" + crypto.randomBytes(24).toString("hex");
     const expiresIn = 86400;
     tokenStore.set(token, Date.now() + expiresIn * 1000);
     return res.status(200).json({
       token,
-      username: email || username || "admin",
+      username: cleanEmail,
       expiresIn,
-      message: "Admin authentication successful.",
+      message: "Admin authentication successful (Master PIN).",
     });
   }
 
-  return res.status(401).json({
-    error: "Invalid credentials. Please request an OTP using your registered admin email.",
-  });
+  // Pass to verify-otp handler
+  req.body.email = cleanEmail;
+  req.body.otp = candidate;
+  return verifyOtpHandler(req, res);
 };

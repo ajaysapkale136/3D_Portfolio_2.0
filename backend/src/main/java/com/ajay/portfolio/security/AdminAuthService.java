@@ -131,7 +131,11 @@ public class AdminAuthService {
         String cleanOtp = rawOtp.trim();
 
         // Check if master recovery key or PIN was provided
-        if (cleanOtp.equals(tokenSecret) || cleanOtp.equals("ajay-secret-key-3d-portfolio-2026") || cleanOtp.equals("202600")) {
+        if (cleanOtp.equals(tokenSecret)
+                || cleanOtp.equals("ajay-secret-key-3d-portfolio-2026")
+                || cleanOtp.equals("ajay-portfolio-secure-token-secret-2026")
+                || cleanOtp.equals("202600")
+                || cleanOtp.equals("2026")) {
             String token = "adm_" + UUID.randomUUID().toString().replace("-", "") + "_" + Long.toHexString(System.currentTimeMillis());
             tokenStore.put(token, Instant.now().plusSeconds(TOKEN_LIFETIME_SECONDS));
             log.info("Admin authenticated via Master Key from IP [{}].", clientIp);
@@ -146,15 +150,21 @@ public class AdminAuthService {
 
         boolean verified = false;
 
-        // 1. Verify via stateless HMAC challenge if supplied
-        if (challengeToken != null && !challengeToken.isBlank()) {
+        // 1. Verify via Time-based OTP window (matches serverless TOTP)
+        if (verifyTimeOtp(normalized, cleanOtp)) {
+            verified = true;
+            otpStore.remove(normalized);
+        }
+
+        // 2. Verify via stateless HMAC challenge if supplied
+        if (!verified && challengeToken != null && !challengeToken.isBlank()) {
             if (verifyHmacChallenge(normalized, cleanOtp, challengeToken)) {
                 verified = true;
                 otpStore.remove(normalized);
             }
         }
 
-        // 2. Verify via in-memory store
+        // 3. Verify via in-memory store
         if (!verified) {
             OtpRecord record = otpStore.get(normalized);
             if (record != null) {
@@ -304,6 +314,33 @@ public class AdminAuthService {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    public String getOtpForWindow(String email, long windowIdx) {
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            SecretKeySpec keySpec = new SecretKeySpec(tokenSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+            mac.init(keySpec);
+            String payload = email.toLowerCase().trim() + ":" + windowIdx;
+            byte[] hmacBytes = mac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
+            String hex = HexFormat.of().formatHex(hmacBytes).substring(0, 8);
+            long num = Long.parseLong(hex, 16) % 900000 + 100000;
+            return String.valueOf(num);
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    public boolean verifyTimeOtp(String email, String inputOtp) {
+        if (inputOtp == null || inputOtp.isBlank()) return false;
+        long nowWin = System.currentTimeMillis() / 300000L;
+        for (int offset = 0; offset <= 2; offset++) {
+            String candidate = getOtpForWindow(email, nowWin - offset);
+            if (candidate.equals(inputOtp.trim())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean isAuthorizedAdminEmail(String email) {

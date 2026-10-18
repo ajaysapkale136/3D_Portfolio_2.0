@@ -662,12 +662,13 @@ export async function adminSendOtp(email) {
   }
   if (data && data.challengeToken && isBrowser) {
     sessionStorage.setItem("portfolio_admin_otp_challenge", data.challengeToken);
+    localStorage.setItem("portfolio_admin_otp_challenge", data.challengeToken);
   }
   return data;
 }
 
 /**
- * Authenticate Admin via Email ID and 6-digit OTP
+ * Authenticate Admin via Email ID and 6-digit OTP or Master PIN
  */
 export async function adminLogin(email, otp) {
   const cleanEmail = (email || "").trim().toLowerCase();
@@ -677,10 +678,12 @@ export async function adminLogin(email, otp) {
     throw new Error("Admin email address is required.");
   }
   if (!cleanOtp) {
-    throw new Error("Verification code (OTP) is required.");
+    throw new Error("Verification code (OTP) or Master PIN is required.");
   }
 
-  const challengeToken = isBrowser ? sessionStorage.getItem("portfolio_admin_otp_challenge") : null;
+  const challengeToken = isBrowser
+    ? sessionStorage.getItem("portfolio_admin_otp_challenge") || localStorage.getItem("portfolio_admin_otp_challenge")
+    : null;
 
   // 1. Try verify-otp endpoint
   try {
@@ -698,6 +701,7 @@ export async function adminLogin(email, otp) {
       if (isBrowser) {
         localStorage.setItem("portfolio_admin_token", data.token);
         sessionStorage.removeItem("portfolio_admin_otp_challenge");
+        localStorage.removeItem("portfolio_admin_otp_challenge");
       }
       return data;
     }
@@ -732,11 +736,16 @@ export async function adminLogin(email, otp) {
     if (isBrowser) {
       localStorage.setItem("portfolio_admin_token", loginData.token);
       sessionStorage.removeItem("portfolio_admin_otp_challenge");
+      localStorage.removeItem("portfolio_admin_otp_challenge");
     }
     return loginData;
   }
 
-  throw new Error(loginData.message || loginData.error || "Invalid verification code. Please check your email.");
+  throw new Error(
+    loginData.message ||
+      loginData.error ||
+      "Invalid verification code. Please request a new OTP or enter the Master PIN."
+  );
 }
 
 /**

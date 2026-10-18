@@ -6,6 +6,8 @@ const {
   isAuthorizedAdmin,
   hashOtp,
   generateHmacChallenge,
+  getOtpForWindow,
+  getClientIp,
   checkRateLimit,
 } = require("./_store");
 
@@ -37,20 +39,20 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // 2. Rate limiting (max 5 requests per 10 minutes)
-    const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress || "ip";
-    if (!checkRateLimit(`otp_${ip}`, 5, 10)) {
+    // 2. Rate limiting (max 10 requests per 10 minutes)
+    const ip = getClientIp(req);
+    if (!checkRateLimit(`otp_${ip}`, 10, 10)) {
       return res.status(429).json({
         error: "Too many OTP requests. Please wait before requesting another code.",
       });
     }
 
-    // 3. Generate 6-digit OTP
-    const code = Math.floor(100000 + Math.random() * 900000);
-    const rawOtp = String(code);
+    // 3. Generate 6-digit OTP (time-based deterministic window + signed HMAC challenge)
+    const nowWin = Math.floor(Date.now() / 300000);
+    const rawOtp = getOtpForWindow(normalized, nowWin);
     const salt = crypto.randomBytes(16).toString("hex");
     const hashedOtp = hashOtp(rawOtp, salt);
-    const expiry = Date.now() + 10 * 60 * 1000; // 10 minutes
+    const expiry = Date.now() + 15 * 60 * 1000; // 15 minutes
 
     // Generate stateless cryptographic HMAC challenge token
     const challengeToken = generateHmacChallenge(normalized, rawOtp, expiry);
@@ -105,10 +107,15 @@ module.exports = async function handler(req, res) {
       console.warn("[send-otp] Nodemailer dispatch error:", mailErr.message);
     }
 
+    res.setHeader(
+      "Set-Cookie",
+      `portfolio_otp_challenge=${challengeToken}; Path=/; Max-Age=900; SameSite=Lax`
+    );
+
     return res.status(200).json({
       success: true,
       message: `Verification code dispatched to ${normalized}. Please check your inbox.`,
-      expiryMinutes: 10,
+      expiryMinutes: 15,
       challengeToken,
     });
   } catch (err) {

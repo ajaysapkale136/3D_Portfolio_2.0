@@ -1002,13 +1002,7 @@ export default function AdminDashboard() {
     setLoginError("");
     setLoginSuccess("");
     if (!loginEmail || !loginOtp) {
-      setLoginError("Please provide your Admin Email and 6-digit OTP.");
-      return;
-    }
-
-    const hasChallenge = typeof window !== "undefined" && sessionStorage.getItem("portfolio_admin_otp_challenge");
-    if (!otpSent && !hasChallenge && loginOtp.length === 6 && loginOtp !== "ajay-secret-key-3d-portfolio-2026") {
-      setLoginError("No active verification code found. Please click 'Send OTP' above to receive your code.");
+      setLoginError("Please provide your Admin Email and 6-digit OTP or Master PIN.");
       return;
     }
 
@@ -1503,15 +1497,15 @@ export default function AdminDashboard() {
             </FormGroup>
 
             <FormGroup>
-              <Label>Verification Code (6-Digit OTP)</Label>
+              <Label>Verification Code (6-Digit OTP or PIN)</Label>
               <Input
                 type="text"
-                maxLength="6"
+                maxLength="64"
                 value={loginOtp}
-                onChange={(e) => setLoginOtp(e.target.value.replace(/[^0-9]/g, ""))}
-                placeholder="Enter 6-digit OTP from email"
+                onChange={(e) => setLoginOtp(e.target.value.trim())}
+                placeholder="Enter 6-digit OTP or PIN (202600)"
                 required
-                style={{ letterSpacing: "4px", fontSize: "16px", fontWeight: "600" }}
+                style={{ letterSpacing: "3px", fontSize: "16px", fontWeight: "600" }}
               />
             </FormGroup>
 
