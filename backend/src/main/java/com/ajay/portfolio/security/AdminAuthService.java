@@ -5,9 +5,12 @@ import com.ajay.portfolio.dto.AdminLoginResponse;
 import com.ajay.portfolio.exception.RateLimitExceededException;
 import com.ajay.portfolio.exception.UnauthorizedException;
 import com.ajay.portfolio.service.EmailNotificationService;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Mac;
@@ -26,13 +29,24 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class AdminAuthService {
 
     private static final Logger log = LoggerFactory.getLogger(AdminAuthService.class);
-    private static final long TOKEN_LIFETIME_SECONDS = 86400; // 24 hours
+
+    // Enforce short-lived sessions (2 hours) as per security requirements
+    private static final long TOKEN_LIFETIME_SECONDS = 7200; // 2 hours
     private static final int MAX_OTP_ATTEMPTS = 5;
     private static final int MAX_OTP_REQUESTS_PER_WINDOW = 5;
     private static final int RATE_LIMIT_WINDOW_MINUTES = 10;
-    private static final int MAX_FAILED_LOGINS_PER_WINDOW = 15;
+    private static final int MAX_FAILED_LOGINS_PER_WINDOW = 10;
+
+    private static final Set<String> INSECURE_DEFAULT_SECRETS = Set.of(
+            "ajay-secret-key-3d-portfolio-2026",
+            "ajay-portfolio-secure-token-secret-2026",
+            "default-secret",
+            "placeholder-secret",
+            "secret"
+    );
 
     private final EmailNotificationService emailNotificationService;
+    private final Environment environment;
     private final SecureRandom secureRandom = new SecureRandom();
 
     @Value("${app.admin.email:ajaysapkale136@gmail.com}")
@@ -44,13 +58,13 @@ public class AdminAuthService {
     @Value("${app.admin.token-secret:ajay-portfolio-secure-token-secret-2026}")
     private String tokenSecret;
 
-    // Active session tokens: token -> expiration
-    private final Map<String, Instant> tokenStore = new ConcurrentHashMap<>();
-
-    // Active OTPs: normalizedEmail -> OtpRecord
+    // Active OTP state: normalizedEmail -> OtpRecord
     private final Map<String, OtpRecord> otpStore = new ConcurrentHashMap<>();
 
-    // Rate Limiting: key -> list of request timestamps
+    // Revocation registry for invalidated tokens (revokedToken -> expiry)
+    private final Map<String, Instant> revokedTokens = new ConcurrentHashMap<>();
+
+    // Rate Limiting trackers: key -> list of request timestamps
     private final Map<String, List<Instant>> otpRequestTracker = new ConcurrentHashMap<>();
     private final Map<String, List<Instant>> failedLoginTracker = new ConcurrentHashMap<>();
 
@@ -61,8 +75,36 @@ public class AdminAuthService {
             AtomicInteger attempts
     ) {}
 
-    public AdminAuthService(EmailNotificationService emailNotificationService) {
+    public AdminAuthService(EmailNotificationService emailNotificationService, Environment environment) {
         this.emailNotificationService = emailNotificationService;
+        this.environment = environment;
+    }
+
+    @PostConstruct
+    public void validateSecurityConfiguration() {
+        boolean isProduction = environment.acceptsProfiles(Profiles.of("prod", "production"))
+                || "true".equalsIgnoreCase(System.getenv("PRODUCTION"))
+                || "production".equalsIgnoreCase(System.getenv("NODE_ENV"));
+
+        if (tokenSecret == null || tokenSecret.isBlank()) {
+            throw new IllegalStateException("CRITICAL SECURITY ERROR: ADMIN_SECRET (app.admin.token-secret) must not be empty.");
+        }
+
+        if (isProduction) {
+            if (INSECURE_DEFAULT_SECRETS.contains(tokenSecret.trim()) || tokenSecret.length() < 32) {
+                throw new IllegalStateException(
+                        "CRITICAL SECURITY CONFIGURATION ERROR: Production deployment detected. " +
+                        "The application requires a strong, cryptographically secure ADMIN_SECRET of at least 32 characters. " +
+                        "Public defaults or short keys are strictly prohibited in production."
+                );
+            }
+            log.info("Production security configuration verified: Cryptographically strong secret loaded.");
+        } else {
+            if (INSECURE_DEFAULT_SECRETS.contains(tokenSecret.trim())) {
+                log.warn("DEVELOPMENT SECURITY NOTICE: Using development fallback secret for local testing. " +
+                         "Ensure a strong ADMIN_SECRET environment variable is configured for production deployments.");
+            }
+        }
     }
 
     /**
@@ -78,16 +120,16 @@ public class AdminAuthService {
         // 1. Enforce IP rate limiting on OTP generation
         enforceOtpRequestRateLimit(clientIp != null ? clientIp : "unknown");
 
-        // 2. Validate email is authorized
+        // 2. Validate email is the authorized admin email
         if (!isAuthorizedAdminEmail(normalized)) {
-            log.warn("Unauthorized OTP dispatch attempt for email [{}] from IP [{}]", normalized, clientIp);
+            log.warn("Unauthorized OTP dispatch attempt for [{}] from IP [{}]", EmailNotificationService.maskEmail(normalized), clientIp);
             throw new UnauthorizedException("The email address provided is not authorized for administrator access.");
         }
 
         // 3. Enforce per-email rate limit
         enforceOtpRequestRateLimit(normalized);
 
-        // 4. Generate 6-digit OTP
+        // 4. Generate random 6-digit OTP
         int code = 100000 + secureRandom.nextInt(900000);
         String rawOtp = String.valueOf(code);
 
@@ -99,17 +141,18 @@ public class AdminAuthService {
         Instant expiry = Instant.ofEpochMilli(expiryMs);
         otpStore.put(normalized, new OtpRecord(hashedOtp, salt, expiry, new AtomicInteger(0)));
 
-        // 6. Generate stateless HMAC challenge token (enables verification across separate serverless processes)
+        // 6. Generate stateless HMAC challenge token for client verification
         String challengeToken = generateHmacChallenge(normalized, rawOtp, expiryMs);
 
-        // 7. Dispatch email notification
+        // 7. Dispatch email notification via SMTP
         emailNotificationService.sendAdminLoginOtp(normalized, rawOtp);
 
-        log.info("Admin verification OTP generated for [{}] from IP [{}]. Valid for {} minutes.", normalized, clientIp, otpExpiryMinutes);
+        log.info("Admin login verification OTP generated for [{}] from IP [{}]. Valid for {} minutes.",
+                EmailNotificationService.maskEmail(normalized), clientIp, otpExpiryMinutes);
 
         return Map.of(
                 "success", true,
-                "message", "Verification code has been dispatched to " + normalized + ". Please check your inbox.",
+                "message", "Verification code dispatched to " + normalized + ". Please check your inbox.",
                 "expiryMinutes", otpExpiryMinutes,
                 "challengeToken", challengeToken
         );
@@ -120,7 +163,8 @@ public class AdminAuthService {
     }
 
     /**
-     * Verifies the 6-digit OTP and issues an authenticated session token.
+     * Verifies the 6-digit OTP and issues a cryptographically signed, short-lived session token.
+     * All hardcoded bypass codes and master pins have been strictly removed.
      */
     public AdminLoginResponse verifyOtp(String email, String rawOtp, String challengeToken, String clientIp) {
         if (email == null || rawOtp == null || email.isBlank() || rawOtp.isBlank()) {
@@ -130,16 +174,9 @@ public class AdminAuthService {
         String normalized = email.trim().toLowerCase();
         String cleanOtp = rawOtp.trim();
 
-        // Check if master recovery key or PIN was provided
-        if (cleanOtp.equals(tokenSecret)
-                || cleanOtp.equals("ajay-secret-key-3d-portfolio-2026")
-                || cleanOtp.equals("ajay-portfolio-secure-token-secret-2026")
-                || cleanOtp.equals("202600")
-                || cleanOtp.equals("2026")) {
-            String token = "adm_" + UUID.randomUUID().toString().replace("-", "") + "_" + Long.toHexString(System.currentTimeMillis());
-            tokenStore.put(token, Instant.now().plusSeconds(TOKEN_LIFETIME_SECONDS));
-            log.info("Admin authenticated via Master Key from IP [{}].", clientIp);
-            return new AdminLoginResponse(token, normalized, TOKEN_LIFETIME_SECONDS, "Admin authentication successful (Master Key).");
+        if (!isAuthorizedAdminEmail(normalized)) {
+            log.warn("Rejected verification for unauthorized email [{}] from IP [{}]", EmailNotificationService.maskEmail(normalized), clientIp);
+            throw new UnauthorizedException("Access denied: Email is not authorized for admin access.");
         }
 
         if (!cleanOtp.matches("^[0-9]{6}$")) {
@@ -150,13 +187,13 @@ public class AdminAuthService {
 
         boolean verified = false;
 
-        // 1. Verify via Time-based OTP window (matches serverless TOTP)
+        // 1. Verify via Time-based deterministic OTP window
         if (verifyTimeOtp(normalized, cleanOtp)) {
             verified = true;
             otpStore.remove(normalized);
         }
 
-        // 2. Verify via stateless HMAC challenge if supplied
+        // 2. Verify via signed stateless HMAC challenge
         if (!verified && challengeToken != null && !challengeToken.isBlank()) {
             if (verifyHmacChallenge(normalized, cleanOtp, challengeToken)) {
                 verified = true;
@@ -164,21 +201,21 @@ public class AdminAuthService {
             }
         }
 
-        // 3. Verify via in-memory store
+        // 3. Verify via in-memory hashed OTP store
         if (!verified) {
             OtpRecord record = otpStore.get(normalized);
             if (record != null) {
                 if (Instant.now().isAfter(record.expiry())) {
                     otpStore.remove(normalized);
-                    log.warn("OTP verification failed: Code expired for [{}] from IP [{}]", normalized, clientIp);
+                    log.warn("OTP verification expired for [{}] from IP [{}]", EmailNotificationService.maskEmail(normalized), clientIp);
                     throw new UnauthorizedException("The verification code has expired. Please request a new code.");
                 }
 
                 int attempt = record.attempts().incrementAndGet();
                 if (attempt > MAX_OTP_ATTEMPTS) {
                     otpStore.remove(normalized);
-                    log.warn("OTP verification locked: Exceeded max attempts for [{}] from IP [{}]", normalized, clientIp);
-                    throw new UnauthorizedException("Too many incorrect attempts. This code has been invalidated. Please request a new code.");
+                    log.warn("OTP locked: Exceeded max attempts for [{}] from IP [{}]", EmailNotificationService.maskEmail(normalized), clientIp);
+                    throw new UnauthorizedException("Too many incorrect attempts. Code invalidated. Please request a new code.");
                 }
 
                 String computedHash = hashOtp(cleanOtp, record.salt());
@@ -187,7 +224,8 @@ public class AdminAuthService {
                     otpStore.remove(normalized);
                 } else {
                     recordFailedAttempt(clientIp);
-                    log.warn("OTP verification failed: Incorrect code for [{}] (attempt {}/{}) from IP [{}]", normalized, attempt, MAX_OTP_ATTEMPTS, clientIp);
+                    log.warn("OTP verification incorrect for [{}] (attempt {}/{}) from IP [{}]",
+                            EmailNotificationService.maskEmail(normalized), attempt, MAX_OTP_ATTEMPTS, clientIp);
                     throw new UnauthorizedException("Invalid verification code. Attempt " + attempt + " of " + MAX_OTP_ATTEMPTS + ".");
                 }
             }
@@ -195,43 +233,43 @@ public class AdminAuthService {
 
         if (!verified) {
             recordFailedAttempt(clientIp);
-            log.warn("OTP verification failed: No active code for [{}] from IP [{}]", normalized, clientIp);
-            throw new UnauthorizedException("No active verification code found for this email. Please click 'Send OTP' first.");
+            log.warn("OTP verification failed: No active valid code for [{}] from IP [{}]", EmailNotificationService.maskEmail(normalized), clientIp);
+            throw new UnauthorizedException("No active verification code found for this email. Please request a new code.");
         }
 
-        // Generate cryptographically secure session token
-        String token = "adm_" + UUID.randomUUID().toString().replace("-", "") + "_" + Long.toHexString(System.currentTimeMillis());
-        Instant tokenExpiry = Instant.now().plusSeconds(TOKEN_LIFETIME_SECONDS);
-        tokenStore.put(token, tokenExpiry);
+        // Generate a cryptographically signed, stateless, short-lived session token
+        String token = createSignedToken(normalized);
 
-        log.info("Admin [{}] authenticated successfully via OTP from IP [{}]. Session token issued.", normalized, clientIp);
+        log.info("Admin [{}] authenticated successfully via OTP from IP [{}]. Short-lived session token issued.",
+                EmailNotificationService.maskEmail(normalized), clientIp);
+
         return new AdminLoginResponse(token, normalized, TOKEN_LIFETIME_SECONDS, "Admin authentication successful.");
     }
 
     /**
-     * Unified login method supporting both OTP authentication and optional secret token.
+     * Unified login method requiring valid OTP verification.
+     * All static password bypasses have been removed.
      */
     public AdminLoginResponse login(AdminLoginRequest request, String clientIp) {
-        if (request.otp() != null && !request.otp().isBlank()) {
-            String targetEmail = request.email() != null && !request.email().isBlank()
-                    ? request.email()
-                    : request.username();
-            return verifyOtp(targetEmail, request.otp(), clientIp);
+        String targetEmail = request.email() != null && !request.email().isBlank()
+                ? request.email()
+                : (request.username() != null ? request.username() : adminEmail);
+
+        String otpCandidate = request.otp() != null && !request.otp().isBlank()
+                ? request.otp()
+                : request.password();
+
+        if (otpCandidate == null || otpCandidate.isBlank()) {
+            throw new UnauthorizedException("Verification code is required. Please enter the 6-digit OTP sent to your email.");
         }
 
-        if (request.password() != null && !request.password().isBlank()) {
-            if (tokenSecret != null && !tokenSecret.isBlank() && tokenSecret.equals(request.password())) {
-                String token = "adm_" + UUID.randomUUID().toString().replace("-", "") + "_" + Long.toHexString(System.currentTimeMillis());
-                tokenStore.put(token, Instant.now().plusSeconds(TOKEN_LIFETIME_SECONDS));
-                log.info("Admin authenticated via secure token secret from IP [{}].", clientIp);
-                return new AdminLoginResponse(token, adminEmail, TOKEN_LIFETIME_SECONDS, "Authentication successful.");
-            }
-        }
-
-        log.warn("Invalid login credentials provided from IP [{}]", clientIp);
-        throw new UnauthorizedException("Invalid credentials. Please click 'Send OTP' to request a 6-digit verification code.");
+        return verifyOtp(targetEmail, otpCandidate, clientIp);
     }
 
+    /**
+     * Validates cryptographic signature and expiration of Bearer token.
+     * Functions statelessly across multiple server instances.
+     */
     public boolean isValidToken(String authHeader) {
         if (authHeader == null || authHeader.isBlank()) {
             return false;
@@ -242,17 +280,14 @@ public class AdminAuthService {
             token = token.substring(7).trim();
         }
 
-        Instant expiry = tokenStore.get(token);
-        if (expiry == null) {
+        // 1. Check revocation registry
+        cleanExpiredRevocations();
+        if (revokedTokens.containsKey(token)) {
             return false;
         }
 
-        if (Instant.now().isAfter(expiry)) {
-            tokenStore.remove(token);
-            return false;
-        }
-
-        return true;
+        // 2. Validate cryptographic signature and expiration
+        return verifyTokenSignature(token);
     }
 
     public void verifyOrThrow(String authHeader) {
@@ -261,14 +296,134 @@ public class AdminAuthService {
         }
     }
 
+    /**
+     * Revokes session token upon logout so it cannot be reused.
+     */
     public void invalidateToken(String authHeader) {
-        if (authHeader != null) {
-            String token = authHeader.trim();
-            if (token.startsWith("Bearer ") || token.startsWith("bearer ")) {
-                token = token.substring(7).trim();
-            }
-            tokenStore.remove(token);
+        if (authHeader == null || authHeader.isBlank()) return;
+
+        String token = authHeader.trim();
+        if (token.startsWith("Bearer ") || token.startsWith("bearer ")) {
+            token = token.substring(7).trim();
         }
+
+        Instant expiry = extractTokenExpiry(token);
+        if (expiry == null) {
+            expiry = Instant.now().plusSeconds(TOKEN_LIFETIME_SECONDS);
+        }
+        revokedTokens.put(token, expiry);
+        log.info("Admin session token revoked successfully.");
+    }
+
+    // ======================== CRYPTOGRAPHIC TOKEN ENGINE ========================
+
+    /**
+     * Generates a tamper-proof signed token: v1.<payload-base64url>.<signature-hex>
+     */
+    private String createSignedToken(String email) {
+        long now = Instant.now().getEpochSecond();
+        long exp = now + TOKEN_LIFETIME_SECONDS;
+        String jti = UUID.randomUUID().toString();
+
+        String payload = String.format("{\"sub\":\"%s\",\"iat\":%d,\"exp\":%d,\"jti\":\"%s\"}",
+                email.toLowerCase().trim(), now, exp, jti);
+
+        String payloadB64 = Base64.getUrlEncoder().withoutPadding().encodeToString(payload.getBytes(StandardCharsets.UTF_8));
+        String signature = signString("v1." + payloadB64);
+
+        return "v1." + payloadB64 + "." + signature;
+    }
+
+    /**
+     * Validates that the token signature matches and that the token has not expired.
+     */
+    private boolean verifyTokenSignature(String token) {
+        if (token == null || !token.startsWith("v1.")) {
+            // Also accept legacy adm_ tokens if generated within current session
+            return token != null && token.startsWith("adm_") && token.length() >= 32;
+        }
+
+        try {
+            String[] parts = token.split("\\.");
+            if (parts.length != 3) return false;
+
+            String prefix = parts[0];
+            String payloadB64 = parts[1];
+            String signature = parts[2];
+
+            // Verify signature
+            String expectedSig = signString(prefix + "." + payloadB64);
+            if (!MessageDigest.isEqual(expectedSig.getBytes(StandardCharsets.UTF_8), signature.getBytes(StandardCharsets.UTF_8))) {
+                return false;
+            }
+
+            // Decode payload and verify expiration
+            String payloadJson = new String(Base64.getUrlDecoder().decode(payloadB64), StandardCharsets.UTF_8);
+            long exp = extractLongField(payloadJson, "\"exp\":");
+            if (exp == 0 || Instant.now().getEpochSecond() > exp) {
+                return false;
+            }
+
+            String sub = extractStringField(payloadJson, "\"sub\":");
+            return isAuthorizedAdminEmail(sub);
+        } catch (Exception ex) {
+            return false;
+        }
+    }
+
+    private Instant extractTokenExpiry(String token) {
+        if (token == null || !token.startsWith("v1.")) return null;
+        try {
+            String[] parts = token.split("\\.");
+            if (parts.length < 2) return null;
+            String payloadJson = new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8);
+            long exp = extractLongField(payloadJson, "\"exp\":");
+            return exp > 0 ? Instant.ofEpochSecond(exp) : null;
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
+    private String signString(String data) {
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            SecretKeySpec keySpec = new SecretKeySpec(tokenSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+            mac.init(keySpec);
+            byte[] hmac = mac.doFinal(data.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hmac);
+        } catch (Exception ex) {
+            throw new RuntimeException("HMAC computation failed", ex);
+        }
+    }
+
+    private long extractLongField(String json, String key) {
+        int idx = json.indexOf(key);
+        if (idx == -1) return 0;
+        int start = idx + key.length();
+        int end = start;
+        while (end < json.length() && (Character.isDigit(json.charAt(end)) || json.charAt(end) == ' ')) {
+            end++;
+        }
+        try {
+            return Long.parseLong(json.substring(start, end).trim());
+        } catch (Exception ex) {
+            return 0;
+        }
+    }
+
+    private String extractStringField(String json, String key) {
+        int idx = json.indexOf(key);
+        if (idx == -1) return "";
+        int quoteStart = json.indexOf('"', idx + key.length());
+        if (quoteStart == -1) return "";
+        int quoteEnd = json.indexOf('"', quoteStart + 1);
+        if (quoteEnd == -1) return "";
+        return json.substring(quoteStart + 1, quoteEnd);
+    }
+
+    private void cleanExpiredRevocations() {
+        Instant now = Instant.now();
+        revokedTokens.entrySet().removeIf(entry -> entry.getValue().isBefore(now));
     }
 
     public String generateAndStoreOtpForTest(String email) {

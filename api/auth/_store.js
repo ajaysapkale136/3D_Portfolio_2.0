@@ -82,18 +82,6 @@ function verifyTimeOtp(email, inputOtp) {
   return false;
 }
 
-function isMasterCode(input) {
-  if (!input) return false;
-  const clean = String(input).trim();
-  return (
-    clean === "202600" ||
-    clean === "2026" ||
-    clean === AUTH_SECRET ||
-    clean === "ajay-secret-key-3d-portfolio-2026" ||
-    clean === "ajay-portfolio-secure-token-secret-2026"
-  );
-}
-
 function checkRateLimit(key, maxLimit, windowMinutes) {
   const now = Date.now();
   const windowMs = windowMinutes * 60 * 1000;
@@ -108,6 +96,13 @@ function checkRateLimit(key, maxLimit, windowMinutes) {
   return true;
 }
 
+function maskEmail(email) {
+  if (!email || !email.includes("@")) return "***";
+  const [name, domain] = email.split("@");
+  if (name.length <= 2) return `${name[0]}***@${domain}`;
+  return `${name[0]}***${name[name.length - 1]}@${domain}`;
+}
+
 module.exports = {
   AUTH_SECRET,
   tokenStore,
@@ -118,7 +113,7 @@ module.exports = {
   verifyHmacChallenge,
   getOtpForWindow,
   verifyTimeOtp,
-  isMasterCode,
   getClientIp,
   checkRateLimit,
+  maskEmail,
 };

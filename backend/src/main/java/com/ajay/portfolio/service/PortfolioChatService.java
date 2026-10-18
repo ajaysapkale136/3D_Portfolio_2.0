@@ -9,16 +9,18 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 public class PortfolioChatService {
 
     private static final Logger log = LoggerFactory.getLogger(PortfolioChatService.class);
+    private static final long AI_REQUEST_TIMEOUT_SECONDS = 12;
 
     private final ChatClient chatClient;
     private final PortfolioContextService contextService;
+    private final ExecutorService aiExecutor = Executors.newCachedThreadPool();
 
     @Value("${spring.ai.openai.api-key:placeholder-key}")
     private String apiKey;
@@ -26,8 +28,18 @@ public class PortfolioChatService {
     @Value("${app.chat.rate-limit-per-minute:20}")
     private int rateLimitPerMinute;
 
-    // In-memory rate limiting: IP -> [minuteBucket, count]
+    @Value("${app.chat.daily-request-limit:500}")
+    private int dailyGlobalLimit;
+
+    @Value("${app.chat.max-daily-per-ip:40}")
+    private int maxDailyPerIp;
+
+    // Minute rate limiting: IP -> RateTracker
     private final Map<String, RateTracker> rateLimitMap = new ConcurrentHashMap<>();
+
+    // Daily spending / budget controls: dayBucket -> count
+    private final Map<Long, AtomicInteger> dailyGlobalTracker = new ConcurrentHashMap<>();
+    private final Map<String, AtomicInteger> dailyIpTracker = new ConcurrentHashMap<>();
 
     private static class RateTracker {
         long minute;
@@ -82,12 +94,19 @@ public class PortfolioChatService {
         // Live portfolio context pulled directly from current database state
         String portfolioContext = contextService.buildContext();
 
-        // Check if OpenAI key is configured
+        // 1. Check if OpenAI key is configured
         if (apiKey == null || apiKey.isBlank() || apiKey.contains("placeholder") || apiKey.contains("demo-key") || apiKey.contains("test-mock-key")) {
             log.info("OpenAI API key is default/placeholder. Providing intelligent grounded rule-based portfolio answer.");
             return generateGroundedFallbackResponse(cleanMessage, portfolioContext);
         }
 
+        // 2. Enforce AI spending / budget cap protection
+        if (!checkDailyBudgetLimits(clientIp)) {
+            log.warn("AI spending cap reached for IP [{}] or daily global budget. Serving intelligent grounded response.", clientIp);
+            return generateGroundedFallbackResponse(cleanMessage, portfolioContext);
+        }
+
+        // 3. Execute AI prompt with strict timeout to prevent thread starvation
         try {
             String promptWithContext = """
                 LIVE VERIFIED PORTFOLIO DATA:
@@ -97,11 +116,19 @@ public class PortfolioChatService {
                 %s
                 """.formatted(portfolioContext, cleanMessage);
 
-            return chatClient.prompt()
-                    .user(promptWithContext)
-                    .call()
-                    .content();
+            CompletableFuture<String> future = CompletableFuture.supplyAsync(() ->
+                    chatClient.prompt()
+                            .user(promptWithContext)
+                            .call()
+                            .content(),
+                    aiExecutor
+            );
 
+            return future.get(AI_REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
+        } catch (TimeoutException tex) {
+            log.warn("Spring AI OpenAI call timed out after {} seconds. Falling back to grounded response engine.", AI_REQUEST_TIMEOUT_SECONDS);
+            return generateGroundedFallbackResponse(cleanMessage, portfolioContext);
         } catch (Exception ex) {
             log.error("Spring AI OpenAI call error: {}. Falling back to intelligent response engine.", ex.getMessage());
             return generateGroundedFallbackResponse(cleanMessage, portfolioContext);
@@ -126,10 +153,32 @@ public class PortfolioChatService {
         }
     }
 
+    private boolean checkDailyBudgetLimits(String clientIp) {
+        long currentDay = Instant.now().getEpochSecond() / 86400;
+
+        // Global daily budget check
+        AtomicInteger globalCount = dailyGlobalTracker.computeIfAbsent(currentDay, d -> new AtomicInteger(0));
+        if (globalCount.incrementAndGet() > dailyGlobalLimit) {
+            return false;
+        }
+
+        // Clean older days from global tracker
+        dailyGlobalTracker.keySet().removeIf(day -> day < currentDay);
+
+        // Per-IP daily budget check
+        String ipKey = currentDay + ":" + (clientIp != null ? clientIp : "unknown");
+        AtomicInteger ipCount = dailyIpTracker.computeIfAbsent(ipKey, k -> new AtomicInteger(0));
+        if (ipCount.incrementAndGet() > maxDailyPerIp) {
+            return false;
+        }
+
+        return true;
+    }
+
     private String generateGroundedFallbackResponse(String message, String liveContext) {
         String lower = message.toLowerCase();
 
-        // 1. Specific Projects (Checked first so queries like "tell me about Eazy Logistics" match the project)
+        // 1. Specific Projects
         if (lower.contains("eazy logistics") || lower.contains("logistics")) {
             return """
                 **Eazy Logistics & Rental Platform**
@@ -140,120 +189,109 @@ public class PortfolioChatService {
                 """;
         }
 
-        if (lower.contains("wanderlust") || lower.contains("airbnb")) {
+        if (lower.contains("wanderlust") || lower.contains("travel") || lower.contains("airbnb")) {
             return """
-                **Wanderlust (Vacation Rental Platform)**
-                • **Overview:** A full-stack web application replicating Airbnb's core hospitality ecosystem.
-                • **Key Features:** User registration and role authentication with Passport.js, Cloudinary image upload storage, location mapping, interactive review system, and responsive booking UI.
-                • **Tech Stack:** Node.js, Express.js, MongoDB, Mongoose, Bootstrap, Cloudinary API.
-                • **Repository:** Explore the demo and source code in the Projects section!
+                **Wanderlust – Vacation Rental Platform**
+                • **Overview:** An online property listing and booking portal inspired by Airbnb.
+                • **Key Features:** User authentication & authorization (Passport.js), Cloudinary photo hosting, dynamic search, reviews, and responsive mobile-first UI.
+                • **Tech Stack:** Node.js, Express.js, MongoDB, EJS, Bootstrap, Cloudinary API.
+                • **Repository:** Check the GitHub link in the Projects section above!
                 """;
         }
 
-        if (lower.contains("spotify")) {
+        if (lower.contains("spotify") || lower.contains("music")) {
             return """
                 **Spotify Web Clone**
-                • **Overview:** An interactive web music streaming portal.
-                • **Key Features:** Integrated with Spotify Web API for real-time music browsing, responsive album player controls, playlist management, and sleek dark UI.
+                • **Overview:** A responsive web music player mimicking core Spotify features.
+                • **Key Features:** Playlist navigation, audio playback controls, responsive player bar, and Spotify Web API integration.
                 • **Tech Stack:** HTML5, CSS3, JavaScript, Spotify Web API.
+                • **Repository:** Check the GitHub link in the Projects section above!
                 """;
         }
 
-        if (lower.contains("3d portfolio") || lower.contains("this portfolio") || lower.contains("portfolio architecture")) {
+        if (lower.contains("portfolio") || lower.contains("3d")) {
             return """
-                **Ajay's 3D Interactive Portfolio**
-                • **Frontend:** React 18, Three.js, React Three Fiber for interactive 3D canvas and stars, Framer Motion animations, Styled Components.
-                • **Backend:** Java 21, Spring Boot 3.5 REST API with Spring Data JPA and Hibernate.
-                • **AI Integration:** Spring AI with `ChatClient` and live MySQL database grounding.
-                • **Admin Portal:** Secure protected `/admin` dashboard for real-time project, skill, and message management.
+                **3D Developer Portfolio (This Website!)**
+                • **Overview:** Ajay's modern interactive portfolio showcasing his engineering skills and achievements.
+                • **Frontend:** React.js, Three.js, React Three Fiber, Framer Motion, Styled-Components.
+                • **Backend:** Spring Boot 3, Spring Data JPA, Spring AI (OpenAI ChatClient), MySQL (Aiven Cloud).
+                • **Key Highlights:** Real-time interactive 3D graphics, live database sync, and AI chatbot assistant!
                 """;
         }
 
-        if (lower.contains("project") || lower.contains("portfolio work") || lower.contains("show me your projects")) {
+        // 2. All Projects Overview
+        if (lower.contains("project") || lower.contains("work") || lower.contains("portfolio")) {
             return """
-                Ajay has built several enterprise and full-stack projects:
+                ### 🚀 Ajay Sapkale's Key Projects
                 
-                1. **3D Developer Portfolio**: React + Three.js + Spring Boot + Spring AI + MySQL.
-                2. **Eazy Logistics**: Smart logistics platform with biometric Passkeys, Mapbox, and Razorpay.
-                3. **Wanderlust**: Airbnb clone with Passport.js authentication and Cloudinary photo hosting.
-                4. **Spotify Clone**: Music streaming application powered by Spotify Web API.
-                5. **Weather Forecast App**: Real-time city meteorological forecasts.
+                1. **3D Developer Portfolio:** Full-stack React + Three.js + Spring Boot 3 + Spring AI + MySQL app.
+                2. **Eazy Logistics:** Smart rental & logistics portal with biometric face login, Mapbox maps, and Razorpay.
+                3. **Wanderlust:** Airbnb-inspired rental platform with Passport.js and Cloudinary image management.
+                4. **Spotify Clone:** Web music player with dynamic playlist playback and Spotify API.
                 
-                You can inspect the live demos and GitHub repositories in the **Projects** section above!
-                """;
-        }
-
-        // 2. Introduction / Bio / About
-        if (lower.contains("who are you") || lower.contains("who is ajay") || lower.contains("tell me about yourself") || lower.contains("tell me about ajay") || lower.contains("introduce") || lower.contains("about ajay") || lower.contains("bio")) {
-            return """
-                **Ajay Sapkale** is a passionate **Java Full Stack Developer** currently pursuing his B.Tech in Computer Engineering at Godavari College of Engineering (2022–2026).
-                
-                He specializes in:
-                • **Backend Architecture:** Java 21, Spring Boot, Spring Security, Spring AI, Hibernate, RESTful APIs, Node.js, and Express.
-                • **Modern Frontend:** React.js, Three.js, React Three Fiber, Redux Toolkit, Tailwind CSS, and Material UI.
-                • **Databases:** MySQL, PostgreSQL, MongoDB, and Spring Data JPA.
-                
-                He builds scalable web applications with clean architecture, robust security, and interactive 3D experiences!
+                You can explore live interactive demos and source code in the [#Projects](#Projects) section!
                 """;
         }
 
         // 3. Technical Skills
-        if (lower.contains("skill") || lower.contains("tech") || lower.contains("stack") || lower.contains("java") || lower.contains("spring") || lower.contains("frontend") || lower.contains("backend")) {
+        if (lower.contains("skill") || lower.contains("tech") || lower.contains("stack") || lower.contains("java") || lower.contains("spring") || lower.contains("react")) {
             return """
-                Ajay's core technical stack includes:
+                ### 🛠️ Technical Expertise
                 
-                • **Backend & APIs:** Java 21, Spring Boot 3, Spring Data JPA, Spring Security, Spring AI, Hibernate, Node.js, Express.js, RESTful APIs, Microservices.
-                • **Frontend & 3D:** React.js, Redux, Three.js, React Three Fiber, Next.js, JavaScript (ES6+), TypeScript, Tailwind CSS, Bootstrap, Material UI.
-                • **Databases:** MySQL, PostgreSQL, MongoDB, H2 Database.
-                • **Tools & Platforms:** Git, GitHub, Docker, Postman, Eclipse, VS Code, Linux, Render, Vercel.
+                • **Languages:** Java (Java 21, Collections, Streams, Multithreading), JavaScript (ES6+), SQL, HTML5, CSS3.
+                • **Backend & APIs:** Spring Boot 3, Spring Data JPA, Spring Security, Spring AI, Hibernate, RESTful APIs, Node.js, Express.js.
+                • **Frontend:** React.js, Three.js, React Three Fiber, Next.js, Redux, Tailwind CSS, Material UI.
+                • **Databases:** MySQL, PostgreSQL, MongoDB, H2.
+                • **Tools & Platforms:** Git, GitHub, Docker, Postman, Vercel, Aiven Cloud.
+                
+                Ajay writes clean, maintainable, object-oriented code following SOLID principles.
                 """;
         }
 
-        // 4. Hiring / Job / Interview / Recruiter
-        if (lower.contains("hire") || lower.contains("interview") || lower.contains("why should we hire") || lower.contains("job") || lower.contains("opportunity") || lower.contains("recruiter")) {
+        // 4. Experience & Internships
+        if (lower.contains("experience") || lower.contains("intern") || lower.contains("job") || lower.contains("company")) {
             return """
-                **Why Hire Ajay Sapkale?**
-                • **Full-Stack Competence:** Proven capability bridging robust Spring Boot / Java backends with immersive React / Three.js frontends.
-                • **Hands-On Internship Track Record:** Experienced at Growfinix (Backend API development), Edunet Foundation (AI & data processing), and Edu-versity (Full stack web apps).
-                • **Strong Computer Science Foundation:** B.Tech Computer Engineering student with solid grounding in Data Structures, Algorithms, DBMS, and OOP.
-                • **High Adaptability:** Quick learner who rapidly masters cutting-edge tools like Spring AI and Three.js.
+                ### 💼 Practical Experience & Internships
                 
-                He is immediately open to full-time roles, software engineering internships, and freelance projects. Reach out via the **Contact form** below or on LinkedIn!
+                • **Growfinix Technology** – *Web Development Intern*
+                  Built scalable frontend components using React.js and integrated REST APIs with Spring Boot.
+                
+                • **Edunet Foundation** – *Full Stack Development Intern*
+                  Engineered end-to-end full-stack modules with Java, Spring Boot, and relational databases.
+                
+                • **Edu-versity** – *Java Developer Intern*
+                  Implemented core Java business logic, multithreaded processing, and database persistence with JDBC/JPA.
+                
+                Check out the interactive timeline in the [#Experience](#Experience) section for detailed deliverables!
                 """;
         }
 
-        // 5. Work Experience & Internships
-        if (lower.contains("experience") || lower.contains("intern") || lower.contains("growfinix") || lower.contains("edunet") || lower.contains("company")) {
+        // 5. About Ajay
+        if (lower.contains("about") || lower.contains("who is") || lower.contains("ajay") || lower.contains("introduce") || lower.contains("summary")) {
             return """
-                Ajay's professional experience highlights:
+                ### 👋 About Ajay Sapkale
                 
-                1. **Backend Developer Intern @ Growfinix** (Aug 2025 - Oct 2025):
-                   • Built and maintained production RESTful APIs and server logic using Node.js and Express.js.
-                   • Handled database operations and API optimization.
+                Ajay is a dedicated **Java Full Stack Developer** with a B.Tech in Computer Engineering from Godavari College of Engineering, Jalgaon.
                 
-                2. **AI & ML Intern @ Edunet Foundation** (Jan 2025 - Mar 2025):
-                   • Worked on exploratory data analysis, feature engineering, and model training in Python.
-                
-                3. **Full Stack Web Developer Intern @ Edu-versity** (Dec 2023 - Jan 2024):
-                   • Engineered full-stack web applications using React, Node.js, Express, and MongoDB.
+                He specializes in building secure, high-performance backends with **Spring Boot** and pair them with immersive frontend experiences using **React** and **Three.js**.
+                He is enthusiastic about solving complex real-world problems and is actively seeking full-time software engineering roles.
                 """;
         }
 
-        // 6. Education & College
-        if (lower.contains("education") || lower.contains("college") || lower.contains("university") || lower.contains("degree") || lower.contains("study") || lower.contains("cgpa") || lower.contains("grade") || lower.contains("school") || lower.contains("ssc") || lower.contains("hsc")) {
+        // 6. Education
+        if (lower.contains("education") || lower.contains("college") || lower.contains("degree") || lower.contains("btech") || lower.contains("university") || lower.contains("school") || lower.contains("cgpa")) {
             return """
                 ### 🎓 Educational Qualifications
-
+                
                 • **Bachelor of Technology (B.Tech) in Computer Engineering**
-                  *GF's Godavari College of Engineering, Jalgaon* (2022 – 2026, Pursuing)
-                  *Core Subjects:* Data Structures & Algorithms, Object-Oriented Programming, Database Management Systems, Computer Networks, Operating Systems.
-
+                  *Godavari College of Engineering, Jalgaon* (2022 – 2026) | CGPA: 7.79 / 10
+                
                 • **Higher Secondary Certificate (HSC - Class XII, Science)**
                   *S.M. College, Muktainagar* (2021 – 2022) | Score: 68.33%
-
+                
                 • **Secondary School Certificate (SSC - Class X)**
                   *Muktainagar High School* (2019 – 2020) | Score: 78.40%
-
+                
                 You can review the full timeline in the [#Education](#Education) section.
                 """;
         }

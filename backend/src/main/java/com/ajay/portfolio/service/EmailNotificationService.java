@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -71,12 +70,13 @@ public class EmailNotificationService {
                 mailMessage.setText(body);
 
                 mailSender.send(mailMessage);
-                log.info("Sent email notification for contact message #{} to {}", message.getId(), recipientEmail);
+                log.info("Sent email notification for contact inquiry #{} to owner [{}]", message.getId(), maskEmail(recipientEmail));
             } catch (Exception ex) {
-                log.error("Failed to dispatch SMTP email notification (will log locally): {}", ex.getMessage());
+                log.error("Failed to dispatch SMTP email notification for inquiry #{}: {}", message.getId(), ex.getMessage());
             }
         } else {
-            log.info("Real-time owner email notification simulated (configure SMTP to send live):\n{}", body);
+            log.info("Contact inquiry #{} received from [{}] (subject: '{}'). Live mail delivery skipped because SMTP is not configured.",
+                    message.getId(), maskEmail(message.getEmail()), message.getSubject());
         }
     }
 
@@ -127,17 +127,18 @@ public class EmailNotificationService {
                 mailMessage.setText(body);
 
                 mailSender.send(mailMessage);
-                log.info("Sent visitor read receipt notification for message #{} to {}", message.getId(), message.getEmail());
+                log.info("Sent visitor read receipt notification for inquiry #{} to [{}]", message.getId(), maskEmail(message.getEmail()));
             } catch (Exception ex) {
-                log.error("Failed to dispatch visitor read receipt via SMTP: {}", ex.getMessage());
+                log.error("Failed to dispatch visitor read receipt via SMTP for inquiry #{}: {}", message.getId(), ex.getMessage());
             }
         } else {
-            log.info("Visitor read receipt notification simulated for {} (configure SMTP to send live):\n{}", message.getEmail(), body);
+            log.info("Visitor read receipt for inquiry #{} queued for [{}]. Live mail delivery skipped because SMTP is not configured.",
+                    message.getId(), maskEmail(message.getEmail()));
         }
     }
 
     public void sendAdminLoginOtp(String toEmail, String otp) {
-        String subject = "[Portfolio Security] Your Admin Login Verification Code: " + otp;
+        String subject = "[Portfolio Security] Your Admin Login Verification Code";
         String body = String.format("""
                 Hello Ajay,
 
@@ -166,12 +167,26 @@ public class EmailNotificationService {
                 mailMessage.setText(body);
 
                 mailSender.send(mailMessage);
-                log.info("Dispatched admin login OTP verification email to {}", toEmail);
+                log.info("Dispatched admin login verification OTP email to [{}]", maskEmail(toEmail));
             } catch (Exception ex) {
-                log.warn("Failed to dispatch OTP email via SMTP (logged for development): {}", ex.getMessage());
+                log.warn("Failed to dispatch OTP email via SMTP to [{}]: {}", maskEmail(toEmail), ex.getMessage());
             }
         } else {
-            log.info("Admin login OTP simulated for {}: OTP={}", toEmail, otp);
+            // Note: Never log OTP digits or secrets into production logs
+            log.info("Admin login OTP generated for [{}]. Live mail dispatch skipped because SMTP is not configured.", maskEmail(toEmail));
         }
+    }
+
+    public static String maskEmail(String email) {
+        if (email == null || !email.contains("@")) {
+            return "***";
+        }
+        int atIdx = email.indexOf('@');
+        String name = email.substring(0, atIdx);
+        String domain = email.substring(atIdx);
+        if (name.length() <= 2) {
+            return name.charAt(0) + "***" + domain;
+        }
+        return name.charAt(0) + "***" + name.charAt(name.length() - 1) + domain;
     }
 }

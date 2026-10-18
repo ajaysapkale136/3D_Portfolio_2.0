@@ -4,9 +4,9 @@ const {
   AUTH_SECRET,
   tokenStore,
   otpStore,
+  isAuthorizedAdmin,
   verifyHmacChallenge,
   verifyTimeOtp,
-  isMasterCode,
   getClientIp,
   checkRateLimit,
 } = require("./_store");
@@ -33,16 +33,9 @@ module.exports = async function handler(req, res) {
     const normalized = email.toLowerCase().trim();
     const cleanOtp = String(otp).trim();
 
-    // 1. Check if user provided the Master PIN or Master Secret Key
-    if (isMasterCode(cleanOtp)) {
-      const token = "adm_" + crypto.randomBytes(24).toString("hex");
-      tokenStore.set(token, Date.now() + 86400 * 1000);
-      return res.status(200).json({
-        token,
-        username: normalized,
-        expiresIn: 86400,
-        message: "Admin authentication successful (Master PIN/Key).",
-      });
+    // Validate that the email is authorized for admin access
+    if (!isAuthorizedAdmin(normalized)) {
+      return res.status(401).json({ error: "The provided email is not authorized for administrator access." });
     }
 
     // Must be 6 digits
@@ -52,7 +45,7 @@ module.exports = async function handler(req, res) {
 
     // Rate limiting with safe IP resolution
     const ip = getClientIp(req);
-    if (!checkRateLimit(`fail_${ip}`, 25, 15)) {
+    if (!checkRateLimit(`fail_${ip}`, 15, 15)) {
       return res.status(429).json({
         error: "Too many failed attempts. IP temporarily locked. Please try again in 15 minutes.",
       });
@@ -60,17 +53,17 @@ module.exports = async function handler(req, res) {
 
     let isValid = false;
 
-    // 2. Validate via Time-based OTP (Deterministic window - survives across ALL serverless containers & devices!)
+    // 1. Validate via Time-based OTP window (deterministic across all instances)
     if (verifyTimeOtp(normalized, cleanOtp)) {
       isValid = true;
     }
 
-    // 3. Validate via stateless cryptographic HMAC challenge if provided
+    // 2. Validate via stateless cryptographic HMAC challenge if provided
     if (!isValid && challengeToken && typeof challengeToken === "string") {
       isValid = verifyHmacChallenge(normalized, cleanOtp, challengeToken);
     }
 
-    // 4. Validate via cookie if challengeToken wasn't passed in body
+    // 3. Validate via cookie if challengeToken wasn't passed in body
     if (!isValid && req.headers && req.headers.cookie) {
       const cookieMatch = req.headers.cookie.match(/portfolio_otp_challenge=([^;]+)/);
       if (cookieMatch && cookieMatch[1]) {
@@ -78,7 +71,7 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    // 5. Fallback: Validate via in-memory store if warm instance
+    // 4. Fallback: Validate via in-memory store if warm instance
     if (!isValid) {
       const record = otpStore.get(normalized);
       if (record) {
@@ -101,13 +94,21 @@ module.exports = async function handler(req, res) {
 
     if (!isValid) {
       return res.status(401).json({
-        error: "Invalid or expired verification code. Please click 'Send OTP' to request a new code or enter Master PIN.",
+        error: "Invalid or expired verification code. Please request a new OTP code.",
       });
     }
 
-    // Success: Issue 24-hour admin session token
-    const token = "adm_" + crypto.randomBytes(24).toString("hex");
-    const expiresIn = 86400; // 24 hours
+    // Enforce short-lived sessions (2 hours = 7200 seconds)
+    const expiresIn = 7200;
+    const now = Math.floor(Date.now() / 1000);
+    const exp = now + expiresIn;
+    const jti = crypto.randomBytes(16).toString("hex");
+
+    const payload = JSON.stringify({ sub: normalized, iat: now, exp, jti });
+    const payloadB64 = Buffer.from(payload).toString("base64url");
+    const signature = crypto.createHmac("sha256", AUTH_SECRET).update(`v1.${payloadB64}`).digest("hex");
+    const token = `v1.${payloadB64}.${signature}`;
+
     tokenStore.set(token, Date.now() + expiresIn * 1000);
 
     return res.status(200).json({

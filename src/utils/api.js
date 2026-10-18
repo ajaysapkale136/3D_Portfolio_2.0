@@ -678,7 +678,7 @@ export async function adminLogin(email, otp) {
     throw new Error("Admin email address is required.");
   }
   if (!cleanOtp) {
-    throw new Error("Verification code (OTP) or Master PIN is required.");
+    throw new Error("6-digit verification code (OTP) is required.");
   }
 
   const challengeToken = isBrowser
@@ -744,7 +744,7 @@ export async function adminLogin(email, otp) {
   throw new Error(
     loginData.message ||
       loginData.error ||
-      "Invalid verification code. Please request a new OTP or enter the Master PIN."
+      "Invalid verification code. Please request a new OTP code."
   );
 }
 

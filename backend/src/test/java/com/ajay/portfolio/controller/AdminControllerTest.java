@@ -109,6 +109,21 @@ public class AdminControllerTest {
     }
 
     @Test
+    void testHardcodedBypassCodesAreStrictlyRejected() throws Exception {
+        String json = """
+                {
+                    "email": "ajaysapkale136@gmail.com",
+                    "otp": "202600"
+                }
+                """;
+
+        mockMvc.perform(post("/api/auth/verify-otp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void testAdminOtpFlowAndAccess() throws Exception {
         // 1. Dispatch OTP for authorized test admin email
         String otp = adminAuthService.generateAndStoreOtpForTest("admin.test@portfolio.com");

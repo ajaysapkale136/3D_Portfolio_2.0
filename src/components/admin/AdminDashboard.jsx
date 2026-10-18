@@ -1223,7 +1223,7 @@ function AdminDashboardInner() {
     setLoginError("");
     setLoginSuccess("");
     if (!loginEmail || !loginOtp) {
-      setLoginError("Please provide your Admin Email and 6-digit OTP or Master PIN.");
+      setLoginError("Please provide your Admin Email and 6-digit OTP verification code.");
       return;
     }
 
@@ -1685,7 +1685,7 @@ function AdminDashboardInner() {
                 lineHeight: "1.5",
               }}
             >
-              ℹ️ Click <strong>"Send OTP"</strong> to dispatch a 6-digit code to your inbox, or enter Master PIN directly.
+              ℹ️ Click <strong>"Send OTP"</strong> to dispatch a secure 6-digit verification code to your admin email address.
             </div>
           )}
 
@@ -1727,32 +1727,16 @@ function AdminDashboardInner() {
 
             <FormGroup>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
-                <Label style={{ margin: 0 }}>Verification Code</Label>
-                <span
-                  style={{
-                    fontSize: "11px",
-                    color: "#a855f7",
-                    cursor: "pointer",
-                    fontWeight: "600",
-                    background: "rgba(168, 85, 247, 0.12)",
-                    padding: "2px 8px",
-                    borderRadius: "999px",
-                    border: "1px solid rgba(168, 85, 247, 0.3)",
-                  }}
-                  onClick={() => setLoginOtp("202600")}
-                  title="Click to fill Master PIN"
-                >
-                  PIN: 202600
-                </span>
+                <Label style={{ margin: 0 }}>6-Digit Verification Code</Label>
               </div>
               <Input
                 type="text"
-                maxLength="64"
+                maxLength="6"
                 value={loginOtp}
                 onChange={(e) => setLoginOtp(e.target.value.trim())}
-                placeholder="Enter 6-digit OTP or PIN (202600)"
+                placeholder="Enter 6-digit OTP"
                 required
-                style={{ letterSpacing: "3px", fontSize: "16px", fontWeight: "600", textAlign: "center" }}
+                style={{ letterSpacing: "4px", fontSize: "16px", fontWeight: "600", textAlign: "center" }}
               />
             </FormGroup>
 
