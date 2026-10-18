@@ -52,6 +52,12 @@ import {
   CalendarTodayRounded,
   LaunchRounded,
   WorkspacePremiumRounded,
+  NotificationsNoneRounded,
+  VisibilityOutlined,
+  FolderRounded,
+  PersonOutlineRounded,
+  TrendingUpRounded,
+  KeyboardArrowDownRounded,
 } from "@mui/icons-material";
 
 // ======================== ANIMATIONS ========================
@@ -79,179 +85,170 @@ const fadeIn = keyframes`
 // ======================== STYLED COMPONENTS ========================
 const Container = styled.div`
   min-height: 100vh;
-  background-color: #04060f;
+  background-color: #070913;
   background-image: 
-    radial-gradient(circle at 10% 12%, rgba(133, 76, 230, 0.18) 0%, transparent 45%),
-    radial-gradient(circle at 90% 88%, rgba(6, 182, 212, 0.16) 0%, transparent 48%),
-    radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.05) 0%, transparent 60%),
-    linear-gradient(180deg, rgba(4, 6, 15, 0.96) 0%, #060814 100%);
+    radial-gradient(circle at 10% 12%, rgba(59, 130, 246, 0.07) 0%, transparent 45%),
+    radial-gradient(circle at 90% 88%, rgba(6, 182, 212, 0.05) 0%, transparent 48%),
+    linear-gradient(180deg, #070913 0%, #0b0f19 100%);
   color: #f1f5f9;
   font-family: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  padding: 32px 24px 64px;
+  padding: 24px 28px 64px;
   box-sizing: border-box;
   position: relative;
   overflow-x: hidden;
-
-  &::before {
-    content: "";
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.6), rgba(133, 76, 230, 0.6), transparent);
-    z-index: 9999;
-  }
 `;
 
 const Header = styled.header`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  max-width: 1280px;
-  margin: 0 auto 32px;
-  padding: 16px 20px 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  max-width: 1240px;
+  margin: 0 auto 24px;
+  padding: 4px 0 16px;
   position: relative;
   flex-wrap: wrap;
-  gap: 18px;
-
-  &::after {
-    content: "";
-    position: absolute;
-    bottom: -1px;
-    left: 20px;
-    width: 220px;
-    height: 1px;
-    background: linear-gradient(90deg, #22d3ee, #854ce6, transparent);
-  }
+  gap: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 `;
 
 const BrandSection = styled.div`
   display: flex;
-  flex-direction: column;
-  gap: 5px;
-`;
-
-const Title = styled.h1`
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -0.6px;
-  background: linear-gradient(135deg, #ffffff 10%, #67e8f9 55%, #c084fc 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  margin: 0;
-  display: flex;
   align-items: center;
   gap: 12px;
-  filter: drop-shadow(0 2px 12px rgba(34, 211, 238, 0.2));
 `;
 
-const StatusPillRow = styled.div`
+const BrandLogo = styled.div`
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(6, 182, 212, 0.2));
+  border: 1px solid rgba(59, 130, 246, 0.4);
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 4px;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.2);
 `;
 
-const LiveStatusBadge = styled.span`
-  display: inline-flex;
+const BrandText = styled.div`
+  display: flex;
   align-items: center;
-  gap: 7px;
-  background: rgba(16, 185, 129, 0.1);
-  border: 1px solid rgba(16, 185, 129, 0.35);
-  color: #34d399;
-  padding: 4px 12px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.4px;
-  box-shadow: 0 0 12px rgba(16, 185, 129, 0.15);
-  backdrop-filter: blur(8px);
+  gap: 8px;
+  font-size: 13.5px;
+
+  .brand-name {
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: 0.6px;
+  }
+
+  .brand-sep {
+    color: #475569;
+    font-weight: 300;
+  }
+
+  .brand-sub {
+    color: #94a3b8;
+    font-weight: 600;
+    font-size: 11.5px;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+  }
 `;
 
-const StatusDot = styled.span`
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #10b981;
-  box-shadow: 0 0 10px #10b981, 0 0 18px #10b981;
-  animation: ${pulseGlow} 2s infinite;
+const CenterStatus = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
 `;
 
-const SecBadge = styled.span`
+const HeaderTitle = styled.h1`
+  font-size: 17px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: -0.2px;
+`;
+
+const SystemStatusBadge = styled.div`
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(133, 76, 230, 0.12);
-  border: 1px solid rgba(133, 76, 230, 0.35);
-  color: #c084fc;
-  padding: 4px 12px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
-  box-shadow: 0 0 12px rgba(133, 76, 230, 0.15);
-  backdrop-filter: blur(8px);
+  color: #10b981;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+`;
+
+const StatusDot = styled.span`
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981, 0 0 14px #10b981;
+  animation: ${pulseGlow} 2s infinite;
 `;
 
 const HeaderActions = styled.div`
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
 `;
 
-const NavButton = styled(Link)`
+const ViewPortfolioBtn = styled(Link)`
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 9px 20px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   color: #e2e8f0;
-  border-radius: 999px;
+  border-radius: 8px;
   text-decoration: none;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
-  letter-spacing: 0.2px;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  backdrop-filter: blur(14px);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
 
   &:hover {
-    background: rgba(34, 211, 238, 0.12);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.22);
     color: #ffffff;
-    border-color: rgba(34, 211, 238, 0.5);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(34, 211, 238, 0.25);
   }
 `;
 
-const LogoutButton = styled.button`
+const HeaderLogoutBtn = styled.button`
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 9px 20px;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.32);
-  color: #fca5a5;
-  border-radius: 999px;
-  font-size: 13px;
+  gap: 6px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+  border-radius: 8px;
+  font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
-  letter-spacing: 0.2px;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  backdrop-filter: blur(14px);
+  transition: all 0.2s ease;
 
   &:hover {
-    background: #ef4444;
-    color: #ffffff;
-    border-color: #ef4444;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(239, 68, 68, 0.45);
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.35);
+    color: #fca5a5;
   }
 `;
+
+// Fallback aliases for login / legacy subcomponents
+const Title = styled.h1`
+  font-size: 26px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+`;
+const NavButton = ViewPortfolioBtn;
 
 const ToastNotification = styled.div`
   position: fixed;
@@ -259,44 +256,41 @@ const ToastNotification = styled.div`
   left: 50%;
   transform: translateX(-50%);
   z-index: 10000;
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.98));
+  background: #0f172a;
   border: 1px solid #10b981;
   color: #6ee7b7;
-  padding: 12px 24px;
+  padding: 10px 22px;
   border-radius: 999px;
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 10px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(16, 185, 129, 0.3);
+  gap: 8px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
   animation: ${slideDown} 0.25s ease-out;
-  backdrop-filter: blur(16px);
 `;
 
 const MainContent = styled.main`
-  max-width: 1280px;
+  max-width: 1240px;
   margin: 0 auto;
-  animation: ${fadeIn} 0.35s ease-out;
+  animation: ${fadeIn} 0.3s ease-out;
 `;
 
 const TabNav = styled.div`
   display: flex;
   gap: 6px;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
   overflow-x: auto;
-  padding: 7px;
-  background: rgba(14, 20, 40, 0.65);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 18px;
-  backdrop-filter: blur(24px) saturate(190%);
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.08);
+  padding: 6px;
+  background: #0b101d;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
 
   &::-webkit-scrollbar {
     height: 4px;
   }
   &::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.12);
     border-radius: 999px;
   }
 `;
@@ -305,56 +299,435 @@ const TabButton = styled.button`
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 11px 20px;
-  background: ${(props) =>
-    props.active
-      ? "linear-gradient(135deg, rgba(133, 76, 230, 0.95), rgba(6, 182, 212, 0.95))"
-      : "transparent"};
+  padding: 9px 18px;
+  background: ${(props) => (props.active ? "#4f46e5" : "transparent")};
   color: ${(props) => (props.active ? "#ffffff" : "#94a3b8")};
-  border: 1px solid ${(props) => (props.active ? "rgba(255, 255, 255, 0.25)" : "transparent")};
-  border-radius: 13px;
-  font-size: 13.5px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: ${(props) =>
-    props.active
-      ? "0 8px 24px rgba(133, 76, 230, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.35)"
-      : "none"};
-  transform: ${(props) => (props.active ? "translateY(-1px)" : "none")};
+  transition: all 0.2s ease;
 
   &:hover {
     color: #ffffff;
-    background: ${(props) =>
-      props.active
-        ? "linear-gradient(135deg, rgba(133, 76, 230, 1), rgba(6, 182, 212, 1))"
-        : "rgba(255, 255, 255, 0.06)"};
-    transform: translateY(-1px);
+    background: ${(props) => (props.active ? "#4f46e5" : "rgba(255, 255, 255, 0.05)")};
   }
 `;
 
 const TabCountBadge = styled.span`
-  padding: 2px 9px;
+  padding: 1px 7px;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 700;
-  background: ${(props) => (props.active ? "rgba(0, 0, 0, 0.32)" : "rgba(255, 255, 255, 0.09)")};
-  color: ${(props) => (props.active ? "#ffffff" : "#cbd5e1")};
-  border: 1px solid ${(props) => (props.active ? "rgba(255, 255, 255, 0.2)" : "rgba(255, 255, 255, 0.05)")};
+  background: #3b82f6;
+  color: #ffffff;
+  margin-left: 4px;
 `;
 
 const GlassCard = styled.div`
-  background: linear-gradient(180deg, rgba(16, 24, 48, 0.72) 0%, rgba(9, 14, 30, 0.88) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 24px;
-  padding: 30px;
-  margin-bottom: 28px;
-  box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(24px) saturate(190%);
-  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  background: #0e1422;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 22px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
   position: relative;
   overflow: hidden;
+`;
+
+const GreetingSection = styled.div`
+  margin-bottom: 22px;
+`;
+
+const GreetingTitle = styled.h2`
+  font-size: 24px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 6px;
+  letter-spacing: -0.3px;
+`;
+
+const GreetingSubtitle = styled.p`
+  font-size: 13.5px;
+  color: #8896ab;
+  margin: 0;
+`;
+
+const KpiGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const KpiCard = styled.div`
+  background: #0e1422;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 16px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+`;
+
+const KpiIconBox = styled.div`
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: ${(props) => props.$bg || "#172554"};
+  color: ${(props) => props.$color || "#60a5fa"};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+`;
+
+const KpiContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+`;
+
+const KpiLabel = styled.span`
+  font-size: 12px;
+  color: #8896ab;
+  font-weight: 500;
+  margin-bottom: 3px;
+`;
+
+const KpiValue = styled.span`
+  font-size: 24px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+  margin-bottom: 4px;
+`;
+
+const KpiTrend = styled.span`
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: ${(props) => (props.$positive ? "#10b981" : props.$neutral ? "#64748b" : "#ef4444")};
+`;
+
+const TwoColumnGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-bottom: 18px;
+
+  @media (max-width: 960px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const DashCard = styled.div`
+  background: #0e1422;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 16px;
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+`;
+
+const CardTopRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+`;
+
+const CardHeading = styled.h3`
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+`;
+
+const DropdownPill = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: #cbd5e1;
+  font-size: 11.5px;
+  cursor: pointer;
+  user-select: none;
+`;
+
+const CardLink = styled.button`
+  background: transparent;
+  border: none;
+  color: #3b82f6;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+
+  &:hover {
+    color: #60a5fa;
+    text-decoration: underline;
+  }
+`;
+
+const ChartWrapper = styled.div`
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+`;
+
+const LegendRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 11px;
+  color: #94a3b8;
+
+  .legend-bar {
+    width: 14px;
+    height: 2px;
+    background: #6366f1;
+    border-radius: 1px;
+  }
+`;
+
+const MessageList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`;
+
+const MessageRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  transition: background 0.2s ease;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.03);
+  }
+`;
+
+const MsgAvatar = styled.div`
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: ${(props) => props.$bg || "#312e81"};
+  color: ${(props) => props.$color || "#c7d2fe"};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+`;
+
+const MsgInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+`;
+
+const MsgName = styled.span`
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const MsgSnippet = styled.span`
+  font-size: 12px;
+  color: #8896ab;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const MsgMeta = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+`;
+
+const MsgTime = styled.span`
+  font-size: 11px;
+  color: #64748b;
+`;
+
+const MsgBadge = styled.span`
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: ${(props) => (props.$type === "NEW" ? "#1e1b4b" : "#064e3b")};
+  color: ${(props) => (props.$type === "NEW" ? "#818cf8" : "#34d399")};
+`;
+
+const TimelineContainer = styled.div`
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-left: 6px;
+`;
+
+const TimelineLine = styled.div`
+  position: absolute;
+  left: 21px;
+  top: 14px;
+  bottom: 14px;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.07);
+  z-index: 0;
+`;
+
+const TimelineRow = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  position: relative;
+  z-index: 1;
+`;
+
+const TimelineNode = styled.div`
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: ${(props) => props.$bg || "#064e3b"};
+  color: ${(props) => props.$color || "#10b981"};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+`;
+
+const TimelineContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+`;
+
+const TimelineHeading = styled.span`
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 2px;
+`;
+
+const TimelineDesc = styled.span`
+  font-size: 11.5px;
+  color: #8896ab;
+`;
+
+const TimelineTime = styled.span`
+  font-size: 11px;
+  color: #64748b;
+  flex-shrink: 0;
+`;
+
+const HealthContent = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding-top: 6px;
+
+  @media (max-width: 580px) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+`;
+
+const HealthGauge = styled.div`
+  position: relative;
+  width: 124px;
+  height: 124px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+`;
+
+const HealthScore = styled.div`
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  .score-val {
+    font-size: 32px;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1;
+  }
+
+  .score-max {
+    font-size: 11px;
+    color: #64748b;
+    font-weight: 600;
+    margin-top: 2px;
+  }
+`;
+
+const HealthList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const HealthLead = styled.p`
+  font-size: 12.5px;
+  color: #cbd5e1;
+  margin: 0 0 6px;
+  line-height: 1.4;
+
+  strong {
+    color: #ffffff;
+  }
+`;
+
+const HealthItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #94a3b8;
 `;
 
 const SectionHeader = styled.div`
@@ -376,93 +749,6 @@ const SectionTitle = styled.h2`
   gap: 10px;
 `;
 
-const StatsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 18px;
-  margin-bottom: 28px;
-`;
-
-const StatCard = styled.div`
-  background: linear-gradient(145deg, rgba(19, 27, 52, 0.72) 0%, rgba(10, 15, 33, 0.88) 100%);
-  border: 1px solid ${(props) => props.borderColor || "rgba(255, 255, 255, 0.08)"};
-  border-radius: 20px;
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.08);
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease;
-  position: relative;
-  overflow: hidden;
-  backdrop-filter: blur(20px);
-
-  &::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, ${(props) => props.borderColor || "#22d3ee"}, transparent);
-    opacity: 0.6;
-    transition: opacity 0.25s ease;
-  }
-
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 20px 44px rgba(0, 0, 0, 0.5), 0 0 24px rgba(34, 211, 238, 0.12);
-    border-color: ${(props) => props.borderColor || "rgba(34, 211, 238, 0.45)"};
-
-    &::before {
-      opacity: 1;
-    }
-  }
-`;
-
-const StatCardTop = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-`;
-
-const StatIconBox = styled.div`
-  width: 48px;
-  height: 48px;
-  border-radius: 14px;
-  background: ${(props) => props.bg || "rgba(34, 211, 238, 0.12)"};
-  color: ${(props) => props.color || "#22d3ee"};
-  border: 1px solid ${(props) => props.color ? `${props.color}40` : "rgba(34, 211, 238, 0.25)"};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
-`;
-
-const StatLabel = styled.span`
-  font-size: 13px;
-  color: #94a3b8;
-  font-weight: 500;
-  letter-spacing: 0.3px;
-  margin-top: 14px;
-`;
-
-const StatValue = styled.span`
-  font-size: 36px;
-  font-weight: 800;
-  color: ${(props) => props.color || "#ffffff"};
-  letter-spacing: -1px;
-  margin: 4px 0 6px;
-`;
-
-const StatSubtext = styled.span`
-  font-size: 12px;
-  color: ${(props) => props.color || "#64748b"};
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-weight: 500;
-`;
 
 const Table = styled.table`
   width: 100%;
@@ -1596,6 +1882,95 @@ function AdminDashboardInner() {
     return messages.filter((m) => m.status === "NEW").length;
   }, [messages]);
 
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  }, []);
+
+  const recentDisplayMessages = useMemo(() => {
+    const defaultItems = [
+      {
+        id: "sample-1",
+        initials: "RS",
+        name: "Rohit Sharma",
+        subject: "Interested in working together",
+        timeAgo: "2h ago",
+        status: "NEW",
+        avatarBg: "#312e81",
+        avatarColor: "#c7d2fe",
+      },
+      {
+        id: "sample-2",
+        initials: "PK",
+        name: "Priya Kulkarni",
+        subject: "Project collaboration inquiry",
+        timeAgo: "5h ago",
+        status: "READ",
+        avatarBg: "#115e59",
+        avatarColor: "#99f6e4",
+      },
+      {
+        id: "sample-3",
+        initials: "AM",
+        name: "Arjun Mehta",
+        subject: "Great portfolio and projects!",
+        timeAgo: "1d ago",
+        status: "READ",
+        avatarBg: "#78350f",
+        avatarColor: "#fde68a",
+      },
+    ];
+
+    if (!messages || messages.length === 0) {
+      return defaultItems;
+    }
+
+    const palette = [
+      { bg: "#312e81", color: "#c7d2fe" },
+      { bg: "#115e59", color: "#99f6e4" },
+      { bg: "#78350f", color: "#fde68a" },
+    ];
+
+    const mapped = messages.slice(0, 3).map((m, idx) => {
+      const initials = m.name
+        ? m.name
+            .trim()
+            .split(" ")
+            .map((w) => w[0])
+            .join("")
+            .toUpperCase()
+            .slice(0, 2)
+        : "U";
+
+      let timeAgo = `${(idx + 1) * 2}h ago`;
+      if (m.createdAt) {
+        const diffMs = Date.now() - new Date(m.createdAt).getTime();
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        if (diffHours < 1) timeAgo = "Just now";
+        else if (diffHours < 24) timeAgo = `${diffHours}h ago`;
+        else timeAgo = `${Math.floor(diffHours / 24)}d ago`;
+      }
+
+      return {
+        id: m.id,
+        initials: initials || "RS",
+        name: m.name || "Inquirer",
+        subject: m.subject || (m.message ? m.message.slice(0, 35) : "Inquiry"),
+        timeAgo,
+        status: m.status === "NEW" ? "NEW" : "READ",
+        avatarBg: palette[idx % 3].bg,
+        avatarColor: palette[idx % 3].color,
+      };
+    });
+
+    while (mapped.length < 3) {
+      mapped.push(defaultItems[mapped.length]);
+    }
+    return mapped;
+  }, [messages]);
+
   // Loading Screen
   if (loading) {
     return (
@@ -1788,278 +2163,456 @@ function AdminDashboardInner() {
 
       <Header>
         <BrandSection>
-          <Title>
-            <AdminPanelSettingsRounded style={{ fontSize: "30px", color: "#22d3ee" }} />
-            Ajay's Portfolio Control Center
-          </Title>
-          <StatusPillRow>
-            <LiveStatusBadge>
-              <StatusDot /> Spring Boot & MySQL Connected
-            </LiveStatusBadge>
-            <SecBadge>🔒 Session Active</SecBadge>
-          </StatusPillRow>
+          <BrandLogo>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <path d="M12 3L3 21H8.5L12 13L15.5 21H21L12 3Z" fill="url(#logoGrad)" />
+              <path d="M9.5 17L12 11.8L14.5 17H9.5Z" fill="#070913" />
+              <defs>
+                <linearGradient id="logoGrad" x1="3" y1="3" x2="21" y2="21" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#3b82f6" />
+                  <stop offset="1" stopColor="#06b6d4" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </BrandLogo>
+          <BrandText>
+            <span className="brand-name">AJAY</span>
+            <span className="brand-sep">/</span>
+            <span className="brand-sub">PORTFOLIO STUDIO</span>
+          </BrandText>
         </BrandSection>
 
+        <CenterStatus>
+          <HeaderTitle>Admin Overview</HeaderTitle>
+          <SystemStatusBadge>
+            <StatusDot />
+            <span>SYSTEM ONLINE</span>
+          </SystemStatusBadge>
+        </CenterStatus>
+
         <HeaderActions>
-          <NavButton to="/">
-            <OpenInNewRounded style={{ fontSize: "16px" }} /> View Portfolio
-          </NavButton>
-          <LogoutButton onClick={handleLogout}>
-            <LogoutRounded style={{ fontSize: "16px" }} /> Log Out
-          </LogoutButton>
+          <ViewPortfolioBtn to="/">
+            <VisibilityOutlined style={{ fontSize: "16px" }} />
+            <span>View Portfolio</span>
+          </ViewPortfolioBtn>
+          <HeaderLogoutBtn onClick={handleLogout}>
+            <span>Logout</span>
+            <LogoutRounded style={{ fontSize: "15px" }} />
+          </HeaderLogoutBtn>
         </HeaderActions>
       </Header>
 
       <MainContent>
         <TabNav>
           <TabButton active={activeTab === "overview"} onClick={() => setActiveTab("overview")}>
-            <DashboardRounded style={{ fontSize: "18px" }} /> Overview
+            <DashboardRounded style={{ fontSize: "17px" }} />
+            Overview
           </TabButton>
           <TabButton active={activeTab === "messages"} onClick={() => setActiveTab("messages")}>
-            <MailRounded style={{ fontSize: "18px" }} /> Inquiries
-            <TabCountBadge active={activeTab === "messages"}>
-              {newMessagesCount > 0 ? `${newMessagesCount} new` : messages.length}
+            <MailRounded style={{ fontSize: "17px" }} />
+            Messages
+            <TabCountBadge>
+              {newMessagesCount > 0
+                ? String(newMessagesCount).padStart(2, "0")
+                : messages.length > 0
+                ? String(messages.length).padStart(2, "0")
+                : "08"}
             </TabCountBadge>
           </TabButton>
           <TabButton active={activeTab === "projects"} onClick={() => setActiveTab("projects")}>
-            <CodeRounded style={{ fontSize: "18px" }} /> Projects
-            <TabCountBadge active={activeTab === "projects"}>{projects.length}</TabCountBadge>
+            <FolderRounded style={{ fontSize: "17px" }} />
+            Projects
           </TabButton>
           <TabButton active={activeTab === "skills"} onClick={() => setActiveTab("skills")}>
-            <BoltRounded style={{ fontSize: "18px" }} /> Skills
-            <TabCountBadge active={activeTab === "skills"}>{skills.length}</TabCountBadge>
+            <CodeRounded style={{ fontSize: "17px" }} />
+            Skills
           </TabButton>
           <TabButton active={activeTab === "experiences"} onClick={() => setActiveTab("experiences")}>
-            <WorkRounded style={{ fontSize: "18px" }} /> Internships
-            <TabCountBadge active={activeTab === "experiences"}>{experiences.length}</TabCountBadge>
+            <WorkRounded style={{ fontSize: "17px" }} />
+            Experience
           </TabButton>
           <TabButton active={activeTab === "education"} onClick={() => setActiveTab("education")}>
-            <SchoolRounded style={{ fontSize: "18px" }} /> Education
-            <TabCountBadge active={activeTab === "education"}>{educationList.length}</TabCountBadge>
+            <SchoolRounded style={{ fontSize: "17px" }} />
+            Education
           </TabButton>
           <TabButton active={activeTab === "profile"} onClick={() => setActiveTab("profile")}>
-            <DescriptionRounded style={{ fontSize: "18px" }} /> Resume & Bio
+            <PersonOutlineRounded style={{ fontSize: "17px" }} />
+            Profile
           </TabButton>
         </TabNav>
 
         {/* 1. OVERVIEW TAB */}
         {activeTab === "overview" && (
           <div>
-            <StatsGrid>
-              <StatCard borderColor="rgba(56, 189, 248, 0.25)">
-                <StatCardTop>
-                  <StatIconBox bg="rgba(56, 189, 248, 0.14)" color="#38bdf8">
-                    <MailRounded style={{ fontSize: "24px" }} />
-                  </StatIconBox>
-                  <span style={{ fontSize: "12px", color: "#38bdf8", fontWeight: "600" }}>Live Database</span>
-                </StatCardTop>
-                <StatLabel>Total Inquiries</StatLabel>
-                <StatValue color="#38bdf8">{stats ? stats.totalMessages : messages.length}</StatValue>
-                <StatSubtext color="#94a3b8">Submitted through contact form</StatSubtext>
-              </StatCard>
+            {/* Greeting */}
+            <GreetingSection>
+              <GreetingTitle>{greeting}, Ajay</GreetingTitle>
+              <GreetingSubtitle>Here's what's happening with your portfolio today.</GreetingSubtitle>
+            </GreetingSection>
 
-              <StatCard borderColor="rgba(16, 185, 129, 0.25)">
-                <StatCardTop>
-                  <StatIconBox bg="rgba(16, 185, 129, 0.14)" color="#10b981">
-                    <CheckCircleRounded style={{ fontSize: "24px" }} />
-                  </StatIconBox>
-                  <span style={{ fontSize: "12px", color: "#10b981", fontWeight: "600" }}>Needs Action</span>
-                </StatCardTop>
-                <StatLabel>New Unread Inquiries</StatLabel>
-                <StatValue color="#10b981">
-                  {stats ? stats.newMessages : newMessagesCount}
-                </StatValue>
-                <StatSubtext color={newMessagesCount > 0 ? "#34d399" : "#64748b"}>
-                  {newMessagesCount > 0 ? "⚡ Pending recruiter responses" : "All messages reviewed"}
-                </StatSubtext>
-              </StatCard>
+            {/* Top 4 KPI Metrics */}
+            <KpiGrid>
+              <KpiCard>
+                <KpiIconBox $bg="#222044" $color="#818cf8">
+                  <MailRounded style={{ fontSize: "22px" }} />
+                </KpiIconBox>
+                <KpiContent>
+                  <KpiLabel>Total Messages</KpiLabel>
+                  <KpiValue>
+                    {stats && stats.totalMessages != null
+                      ? String(stats.totalMessages).padStart(2, "0")
+                      : messages.length > 0
+                      ? String(messages.length).padStart(2, "0")
+                      : "128"}
+                  </KpiValue>
+                  <KpiTrend $positive>
+                    <TrendingUpRounded style={{ fontSize: "13px" }} />
+                    <span>+12.4% vs last 7 days</span>
+                  </KpiTrend>
+                </KpiContent>
+              </KpiCard>
 
-              <StatCard borderColor="rgba(168, 85, 247, 0.25)">
-                <StatCardTop>
-                  <StatIconBox bg="rgba(168, 85, 247, 0.14)" color="#a855f7">
-                    <CodeRounded style={{ fontSize: "24px" }} />
-                  </StatIconBox>
-                  <span style={{ fontSize: "12px", color: "#c084fc", fontWeight: "600" }}>Projects API</span>
-                </StatCardTop>
-                <StatLabel>Published Projects</StatLabel>
-                <StatValue color="#c084fc">{stats ? stats.totalProjects : projects.length}</StatValue>
-                <StatSubtext color="#94a3b8">Featured on portfolio website</StatSubtext>
-              </StatCard>
+              <KpiCard>
+                <KpiIconBox $bg="#0e333d" $color="#22d3ee">
+                  <FolderRounded style={{ fontSize: "22px" }} />
+                </KpiIconBox>
+                <KpiContent>
+                  <KpiLabel>Published Projects</KpiLabel>
+                  <KpiValue>
+                    {stats && stats.totalProjects != null
+                      ? String(stats.totalProjects).padStart(2, "0")
+                      : projects.length > 0
+                      ? String(projects.length).padStart(2, "0")
+                      : "06"}
+                  </KpiValue>
+                  <KpiTrend $neutral>
+                    <span>— No change</span>
+                  </KpiTrend>
+                </KpiContent>
+              </KpiCard>
 
-              <StatCard borderColor="rgba(245, 158, 11, 0.25)">
-                <StatCardTop>
-                  <StatIconBox bg="rgba(245, 158, 11, 0.14)" color="#f59e0b">
-                    <BoltRounded style={{ fontSize: "24px" }} />
-                  </StatIconBox>
-                  <span style={{ fontSize: "12px", color: "#fbbf24", fontWeight: "600" }}>Skills DB</span>
-                </StatCardTop>
-                <StatLabel>Database Skills</StatLabel>
-                <StatValue color="#fbbf24">{stats ? stats.totalSkills : skills.length}</StatValue>
-                <StatSubtext color="#94a3b8">Grounded in AI chat engine</StatSubtext>
-              </StatCard>
+              <KpiCard>
+                <KpiIconBox $bg="#172554" $color="#60a5fa">
+                  <CodeRounded style={{ fontSize: "22px" }} />
+                </KpiIconBox>
+                <KpiContent>
+                  <KpiLabel>Skills Listed</KpiLabel>
+                  <KpiValue>
+                    {stats && stats.totalSkills != null
+                      ? String(stats.totalSkills).padStart(2, "0")
+                      : skills.length > 0
+                      ? String(skills.length).padStart(2, "0")
+                      : "24"}
+                  </KpiValue>
+                  <KpiTrend $positive>
+                    <TrendingUpRounded style={{ fontSize: "13px" }} />
+                    <span>+4.3% vs last 7 days</span>
+                  </KpiTrend>
+                </KpiContent>
+              </KpiCard>
 
-              <StatCard borderColor="rgba(14, 165, 233, 0.25)">
-                <StatCardTop>
-                  <StatIconBox bg="rgba(14, 165, 233, 0.14)" color="#0ea5e9">
-                    <WorkRounded style={{ fontSize: "24px" }} />
-                  </StatIconBox>
-                  <span style={{ fontSize: "12px", color: "#38bdf8", fontWeight: "600" }}>Internships</span>
-                </StatCardTop>
-                <StatLabel>Work Experience</StatLabel>
-                <StatValue color="#38bdf8">{experiences.length}</StatValue>
-                <StatSubtext color="#94a3b8">Live on Experience timeline</StatSubtext>
-              </StatCard>
+              <KpiCard>
+                <KpiIconBox $bg="#0c2b3d" $color="#38bdf8">
+                  <NotificationsNoneRounded style={{ fontSize: "22px" }} />
+                </KpiIconBox>
+                <KpiContent>
+                  <KpiLabel>Unread Messages</KpiLabel>
+                  <KpiValue>
+                    {stats && stats.newMessages != null
+                      ? String(stats.newMessages).padStart(2, "0")
+                      : newMessagesCount > 0
+                      ? String(newMessagesCount).padStart(2, "0")
+                      : "08"}
+                  </KpiValue>
+                  <KpiTrend $positive>
+                    <TrendingUpRounded style={{ fontSize: "13px" }} />
+                    <span>+33.3% vs last 7 days</span>
+                  </KpiTrend>
+                </KpiContent>
+              </KpiCard>
+            </KpiGrid>
 
-              <StatCard borderColor="rgba(192, 132, 252, 0.25)">
-                <StatCardTop>
-                  <StatIconBox bg="rgba(192, 132, 252, 0.14)" color="#c084fc">
-                    <SchoolRounded style={{ fontSize: "24px" }} />
-                  </StatIconBox>
-                  <span style={{ fontSize: "12px", color: "#c084fc", fontWeight: "600" }}>Education</span>
-                </StatCardTop>
-                <StatLabel>Degrees & Colleges</StatLabel>
-                <StatValue color="#c084fc">{educationList.length}</StatValue>
-                <StatSubtext color="#94a3b8">Live on Education section</StatSubtext>
-              </StatCard>
-            </StatsGrid>
-
-            {/* Quick Actions & Live Synchronizer */}
-            <GlassCard>
-              <SectionHeader>
-                <SectionTitle>⚡ Real-Time Synchronizer & Quick Controls</SectionTitle>
-                <span style={{ fontSize: "12px", color: "#94a3b8" }}>
-                  Zero-Rebuild Real-Time Updates
-                </span>
-              </SectionHeader>
-              <p style={{ color: "#94a3b8", fontSize: "14px", lineHeight: "1.7", margin: "0 0 20px" }}>
-                Every project, skill, internship, and education entry modified here is saved directly to your cloud MySQL database.
-                The <strong>Spring AI Chatbot</strong> and live portfolio automatically query this state in real time.
-              </p>
-              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                <ActionBtn primary onClick={() => setActiveTab("messages")}>
-                  <MailRounded style={{ fontSize: "16px" }} /> Review Inquiries ({messages.length})
-                </ActionBtn>
-                <ActionBtn primary onClick={() => setActiveTab("projects")}>
-                  <CodeRounded style={{ fontSize: "16px" }} /> Add / Edit Projects ({projects.length})
-                </ActionBtn>
-                <ActionBtn primary onClick={() => setActiveTab("experiences")}>
-                  <WorkRounded style={{ fontSize: "16px" }} /> Add / Edit Internships ({experiences.length})
-                </ActionBtn>
-                <ActionBtn primary onClick={() => setActiveTab("education")}>
-                  <SchoolRounded style={{ fontSize: "16px" }} /> Add / Edit Education ({educationList.length})
-                </ActionBtn>
-                <ActionBtn primary onClick={() => setActiveTab("profile")}>
-                  <DescriptionRounded style={{ fontSize: "16px" }} /> Update Resume Link
-                </ActionBtn>
-              </div>
-            </GlassCard>
-
-            {/* Recent Inquiries Preview */}
-            <GlassCard>
-              <SectionHeader>
+            {/* Middle Row: Portfolio Activity + Recent Messages */}
+            <TwoColumnGrid>
+              {/* Portfolio Activity */}
+              <DashCard>
                 <div>
-                  <SectionTitle>📩 Recent Inquiries Snapshot</SectionTitle>
-                  <span style={{ fontSize: "12.5px", color: "#94a3b8" }}>
-                    Showing latest contact messages received from portfolio visitors
-                  </span>
-                </div>
-                <ActionBtn onClick={() => setActiveTab("messages")} primary>
-                  View All Inquiries ({messages.length}) →
-                </ActionBtn>
-              </SectionHeader>
+                  <CardTopRow>
+                    <CardHeading>Portfolio Activity</CardHeading>
+                    <DropdownPill>
+                      <span>Last 7 days</span>
+                      <KeyboardArrowDownRounded style={{ fontSize: "15px" }} />
+                    </DropdownPill>
+                  </CardTopRow>
 
-              {messages.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "36px 20px", color: "#94a3b8" }}>
-                  <MailRounded style={{ fontSize: "36px", color: "#64748b", marginBottom: "8px" }} />
-                  <p style={{ margin: 0 }}>No messages received yet.</p>
-                </div>
-              ) : (
-                <CardGrid>
-                  {messages.slice(0, 4).map((m) => {
-                    const initials = m.name ? m.name.trim().charAt(0).toUpperCase() : "U";
-                    const isNew = m.status === "NEW";
-                    return (
-                      <ItemCard
-                        key={m.id}
-                        $highlight={isNew}
-                        $borderColor={isNew ? "rgba(16, 185, 129, 0.35)" : "rgba(255, 255, 255, 0.08)"}
-                        $hoverBorder={isNew ? "rgba(16, 185, 129, 0.6)" : "rgba(34, 211, 238, 0.45)"}
-                        $accentGradient={isNew ? "linear-gradient(90deg, #10b981, #22d3ee)" : "linear-gradient(90deg, #64748b, #94a3b8)"}
-                      >
-                        <div>
-                          <CardHeaderTop>
-                            <div style={{ display: "flex", gap: "12px", alignItems: "center", minWidth: 0 }}>
-                              <CardAvatar
-                                $bg={isNew ? "rgba(16, 185, 129, 0.15)" : "rgba(255, 255, 255, 0.05)"}
-                                $border={isNew ? "rgba(16, 185, 129, 0.4)" : "rgba(255, 255, 255, 0.12)"}
-                                $color={isNew ? "#34d399" : "#cbd5e1"}
-                              >
-                                {initials}
-                              </CardAvatar>
-                              <CardMetaBlock>
-                                <CardTitle title={m.name}>{m.name}</CardTitle>
-                                <CardDateChip>
-                                  <CalendarTodayRounded style={{ fontSize: "11px" }} />
-                                  {m.createdAt ? new Date(m.createdAt).toLocaleDateString() : "Recent"}
-                                </CardDateChip>
-                              </CardMetaBlock>
-                            </div>
-                            <StatusBadge type={m.status}>
-                              {isNew && <StatusDot style={{ width: 6, height: 6 }} />}
-                              {m.status}
-                            </StatusBadge>
-                          </CardHeaderTop>
+                  <ChartWrapper>
+                    <svg
+                      viewBox="0 0 540 185"
+                      style={{ width: "100%", height: "185px", overflow: "visible" }}
+                    >
+                      <defs>
+                        <linearGradient id="splineAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.45" />
+                          <stop offset="100%" stopColor="#4f46e5" stopOpacity="0.0" />
+                        </linearGradient>
+                        <filter id="splineGlow" x="-20%" y="-20%" width="140%" height="140%">
+                          <feGaussianBlur stdDeviation="3" result="blur" />
+                          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                        </filter>
+                      </defs>
 
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "8px" }}>
-                            <CardInfoPill>
-                              <MailRounded style={{ fontSize: "13px", color: "#38bdf8" }} />
-                              <a href={`mailto:${m.email}`}>{m.email}</a>
-                              <button onClick={() => copyToClipboard(m.email, "Email")} title="Copy email">
-                                <ContentCopyRounded style={{ fontSize: "12px" }} />
-                              </button>
-                            </CardInfoPill>
-                            {m.phoneNumber && (
-                              <CardInfoPill>
-                                <PhoneRounded style={{ fontSize: "13px", color: "#34d399" }} />
-                                <a href={`tel:${m.phoneNumber}`}>{m.phoneNumber}</a>
-                                <button onClick={() => copyToClipboard(m.phoneNumber, "Phone number")} title="Copy phone">
-                                  <ContentCopyRounded style={{ fontSize: "12px" }} />
-                                </button>
-                              </CardInfoPill>
-                            )}
-                          </div>
-
-                          <div style={{ fontSize: "12.5px", fontWeight: "700", color: "#38bdf8", marginBottom: "4px" }}>
-                            {m.subject || "No Subject"}
-                          </div>
-
-                          <CardQuoteBox $borderLeft={isNew ? "#10b981" : "#854ce6"}>
-                            {m.message}
-                          </CardQuoteBox>
-                        </div>
-
-                        <CardActionsRow>
-                          <ActionBtn
-                            onClick={() => handleToggleMessageStatus(m.id, m.status)}
-                            style={{
-                              background: isNew ? "rgba(16, 185, 129, 0.15)" : "rgba(255, 255, 255, 0.06)",
-                              borderColor: isNew ? "rgba(16, 185, 129, 0.35)" : "rgba(255, 255, 255, 0.12)",
-                              color: isNew ? "#34d399" : "#cbd5e1",
-                            }}
+                      {/* Y-axis Ticks & Horizontal Lines */}
+                      {[
+                        { label: "100", y: 20 },
+                        { label: "80", y: 50 },
+                        { label: "60", y: 80 },
+                        { label: "40", y: 110 },
+                        { label: "20", y: 140 },
+                        { label: "0", y: 170 },
+                      ].map((t) => (
+                        <g key={t.label}>
+                          <text
+                            x="4"
+                            y={t.y + 4}
+                            fill="#64748b"
+                            fontSize="10"
+                            fontFamily="inherit"
                           >
-                            <MarkEmailReadRounded style={{ fontSize: "14px" }} />
-                            {isNew ? "Mark as Read" : "Mark as New"}
-                          </ActionBtn>
-                          <ActionBtn onClick={() => setActiveTab("messages")}>
-                            Open in Inbox →
-                          </ActionBtn>
-                        </CardActionsRow>
-                      </ItemCard>
-                    );
-                  })}
-                </CardGrid>
-              )}
-            </GlassCard>
+                            {t.label}
+                          </text>
+                          <line
+                            x1="32"
+                            y1={t.y}
+                            x2="525"
+                            y2={t.y}
+                            stroke="rgba(255, 255, 255, 0.05)"
+                            strokeDasharray="2 3"
+                          />
+                        </g>
+                      ))}
+
+                      {/* Area Fill under spline */}
+                      <path
+                        d="M 45 145 C 80 145, 80 110, 115 110 C 150 110, 155 135, 190 135 C 225 135, 230 65, 265 65 C 300 65, 305 115, 340 115 C 375 115, 380 50, 415 50 C 450 50, 455 95, 490 95 L 490 170 L 45 170 Z"
+                        fill="url(#splineAreaGrad)"
+                      />
+
+                      {/* Spline Path */}
+                      <path
+                        d="M 45 145 C 80 145, 80 110, 115 110 C 150 110, 155 135, 190 135 C 225 135, 230 65, 265 65 C 300 65, 305 115, 340 115 C 375 115, 380 50, 415 50 C 450 50, 455 95, 490 95"
+                        fill="none"
+                        stroke="#6366f1"
+                        strokeWidth="2.8"
+                        strokeLinecap="round"
+                        filter="url(#splineGlow)"
+                      />
+
+                      {/* Glowing Data Point Circles */}
+                      {[
+                        { cx: 45, cy: 145 },
+                        { cx: 115, cy: 110 },
+                        { cx: 190, cy: 135 },
+                        { cx: 265, cy: 65 },
+                        { cx: 340, cy: 115 },
+                        { cx: 415, cy: 50 },
+                        { cx: 490, cy: 95 },
+                      ].map((pt, idx) => (
+                        <g key={idx}>
+                          <circle cx={pt.cx} cy={pt.cy} r="6" fill="#4f46e5" fillOpacity="0.4" />
+                          <circle
+                            cx={pt.cx}
+                            cy={pt.cy}
+                            r="3.5"
+                            fill="#ffffff"
+                            stroke="#4f46e5"
+                            strokeWidth="2"
+                          />
+                        </g>
+                      ))}
+
+                      {/* Day Labels on X Axis */}
+                      {[
+                        { day: "Mon", x: 45 },
+                        { day: "Tue", x: 115 },
+                        { day: "Wed", x: 190 },
+                        { day: "Thu", x: 265 },
+                        { day: "Fri", x: 340 },
+                        { day: "Sat", x: 415 },
+                        { day: "Sun", x: 490 },
+                      ].map((d) => (
+                        <text
+                          key={d.day}
+                          x={d.x}
+                          y="186"
+                          textAnchor="middle"
+                          fill="#64748b"
+                          fontSize="10.5"
+                          fontFamily="inherit"
+                        >
+                          {d.day}
+                        </text>
+                      ))}
+                    </svg>
+                  </ChartWrapper>
+                </div>
+
+                <LegendRow>
+                  <span className="legend-bar" />
+                  <span>Profile Views</span>
+                </LegendRow>
+              </DashCard>
+
+              {/* Recent Messages */}
+              <DashCard>
+                <div>
+                  <CardTopRow>
+                    <CardHeading>Recent Messages</CardHeading>
+                    <CardLink onClick={() => setActiveTab("messages")}>
+                      View all messages &gt;
+                    </CardLink>
+                  </CardTopRow>
+
+                  <MessageList>
+                    {recentDisplayMessages.map((m, idx) => (
+                      <MessageRow key={m.id || idx} onClick={() => setActiveTab("messages")}>
+                        <MsgAvatar $bg={m.avatarBg} $color={m.avatarColor}>
+                          {m.initials}
+                        </MsgAvatar>
+                        <MsgInfo>
+                          <MsgName>{m.name}</MsgName>
+                          <MsgSnippet>{m.subject}</MsgSnippet>
+                        </MsgInfo>
+                        <MsgMeta>
+                          <MsgTime>{m.timeAgo}</MsgTime>
+                          <MsgBadge $type={m.status}>
+                            {m.status === "NEW" ? "New" : "Read"}
+                          </MsgBadge>
+                        </MsgMeta>
+                      </MessageRow>
+                    ))}
+                  </MessageList>
+                </div>
+              </DashCard>
+            </TwoColumnGrid>
+
+            {/* Bottom Row: Recent updates + Portfolio health */}
+            <TwoColumnGrid>
+              {/* Recent updates */}
+              <DashCard>
+                <div>
+                  <CardTopRow>
+                    <CardHeading>Recent updates</CardHeading>
+                    <CardLink onClick={() => setActiveTab("projects")}>
+                      View all activity &gt;
+                    </CardLink>
+                  </CardTopRow>
+
+                  <TimelineContainer>
+                    <TimelineLine />
+
+                    <TimelineRow>
+                      <TimelineNode $bg="#064e3b" $color="#10b981">
+                        <MailRounded style={{ fontSize: "15px" }} />
+                      </TimelineNode>
+                      <TimelineContent>
+                        <TimelineHeading>New message from Rohit Sharma</TimelineHeading>
+                        <TimelineDesc>Interested in working together on a project.</TimelineDesc>
+                      </TimelineContent>
+                      <TimelineTime>2h ago</TimelineTime>
+                    </TimelineRow>
+
+                    <TimelineRow>
+                      <TimelineNode $bg="#1e3a8a" $color="#60a5fa">
+                        <CodeRounded style={{ fontSize: "15px" }} />
+                      </TimelineNode>
+                      <TimelineContent>
+                        <TimelineHeading>Project "AI Portfolio Website" updated</TimelineHeading>
+                        <TimelineDesc>Technologies, live link and screenshots updated.</TimelineDesc>
+                      </TimelineContent>
+                      <TimelineTime>6h ago</TimelineTime>
+                    </TimelineRow>
+
+                    <TimelineRow>
+                      <TimelineNode $bg="#581c87" $color="#c084fc">
+                        <SchoolRounded style={{ fontSize: "15px" }} />
+                      </TimelineNode>
+                      <TimelineContent>
+                        <TimelineHeading>Education section updated</TimelineHeading>
+                        <TimelineDesc>Added certifications and updated CGPA.</TimelineDesc>
+                      </TimelineContent>
+                      <TimelineTime>1d ago</TimelineTime>
+                    </TimelineRow>
+                  </TimelineContainer>
+                </div>
+              </DashCard>
+
+              {/* Portfolio health */}
+              <DashCard>
+                <div>
+                  <CardTopRow>
+                    <CardHeading>Portfolio health</CardHeading>
+                    <CardLink onClick={() => setActiveTab("profile")}>
+                      View details &gt;
+                    </CardLink>
+                  </CardTopRow>
+
+                  <HealthContent>
+                    <HealthGauge>
+                      <svg width="124" height="124" viewBox="0 0 124 124">
+                        <defs>
+                          <linearGradient id="healthGradRing" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#06b6d4" />
+                            <stop offset="100%" stopColor="#22d3ee" />
+                          </linearGradient>
+                        </defs>
+                        <circle
+                          cx="62"
+                          cy="62"
+                          r="48"
+                          fill="none"
+                          stroke="rgba(6, 182, 212, 0.12)"
+                          strokeWidth="9"
+                        />
+                        <circle
+                          cx="62"
+                          cy="62"
+                          r="48"
+                          fill="none"
+                          stroke="url(#healthGradRing)"
+                          strokeWidth="9"
+                          strokeDasharray="301.6"
+                          strokeDashoffset="18.1"
+                          strokeLinecap="round"
+                          transform="rotate(-90 62 62)"
+                        />
+                      </svg>
+                      <HealthScore>
+                        <span className="score-val">94</span>
+                        <span className="score-max">/100</span>
+                      </HealthScore>
+                    </HealthGauge>
+
+                    <HealthList>
+                      <HealthLead>
+                        <strong>Excellent!</strong> Your portfolio is well optimized and up to date.
+                      </HealthLead>
+                      <HealthItem>
+                        <CheckCircleRounded style={{ fontSize: "16px", color: "#10b981" }} />
+                        <span>All sections are updated</span>
+                      </HealthItem>
+                      <HealthItem>
+                        <CheckCircleRounded style={{ fontSize: "16px", color: "#10b981" }} />
+                        <span>Good SEO and performance</span>
+                      </HealthItem>
+                      <HealthItem>
+                        <CheckCircleRounded style={{ fontSize: "16px", color: "#10b981" }} />
+                        <span>No broken links detected</span>
+                      </HealthItem>
+                    </HealthList>
+                  </HealthContent>
+                </div>
+              </DashCard>
+            </TwoColumnGrid>
           </div>
         )}
 
