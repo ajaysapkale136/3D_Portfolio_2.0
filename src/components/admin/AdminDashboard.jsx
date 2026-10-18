@@ -1008,8 +1008,69 @@ const ScoreBadge = styled.span`
   box-shadow: 0 0 12px rgba(192, 132, 252, 0.15);
 `;
 
+const AdminLoginIcon = styled.div`
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(133, 76, 230, 0.3), rgba(34, 211, 238, 0.3));
+  border: 1px solid rgba(34, 211, 238, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #22d3ee;
+  box-shadow: 0 0 28px rgba(34, 211, 238, 0.35);
+  animation: ${float} 4s ease-in-out infinite;
+`;
+
+class AdminErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error("AdminDashboard error caught by boundary:", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <Container style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
+          <GlassCard style={{ maxWidth: "480px", textAlign: "center", padding: "40px 32px" }}>
+            <div style={{ fontSize: "40px", marginBottom: "12px" }}>⚠️</div>
+            <Title style={{ justifyContent: "center", fontSize: "22px", marginBottom: "12px" }}>
+              Dashboard Recovery Mode
+            </Title>
+            <p style={{ color: "#94a3b8", fontSize: "13.5px", lineHeight: "1.6", marginBottom: "24px" }}>
+              A display issue occurred while initializing the control center. Your data is completely safe.
+            </p>
+            <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
+              <ActionBtn
+                primary
+                onClick={() => {
+                  try {
+                    localStorage.removeItem("portfolio_admin_token");
+                    sessionStorage.removeItem("portfolio_admin_token");
+                  } catch (_) {}
+                  window.location.reload();
+                }}
+              >
+                Clear Cache & Reload
+              </ActionBtn>
+              <ActionBtn onClick={() => (window.location.href = "/")}>Return to Home</ActionBtn>
+            </div>
+          </GlassCard>
+        </Container>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // ======================== COMPONENT ========================
-export default function AdminDashboard() {
+function AdminDashboardInner() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
@@ -1112,13 +1173,23 @@ export default function AdminDashboard() {
   }, []);
 
   const checkAuthStatus = async () => {
-    setLoading(true);
-    const valid = await adminVerify();
-    setIsAuthenticated(valid);
-    if (valid) {
-      loadAllDashboardData();
+    try {
+      setLoading(true);
+      // Safety timeout: never hang in loading state longer than 2.5 seconds
+      const verifyPromise = adminVerify();
+      const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve(false), 2500));
+      const valid = await Promise.race([verifyPromise, timeoutPromise]);
+
+      setIsAuthenticated(Boolean(valid));
+      if (valid) {
+        loadAllDashboardData();
+      }
+    } catch (err) {
+      console.warn("Auth status check fallback:", err);
+      setIsAuthenticated(false);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -1554,24 +1625,9 @@ export default function AdminDashboard() {
           }}
         >
           <div style={{ textAlign: "center", marginBottom: "28px" }}>
-            <div
-              style={{
-                width: "64px",
-                height: "64px",
-                margin: "0 auto 16px",
-                borderRadius: "20px",
-                background: "linear-gradient(135deg, rgba(133, 76, 230, 0.3), rgba(34, 211, 238, 0.3))",
-                border: "1px solid rgba(34, 211, 238, 0.45)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#22d3ee",
-                boxShadow: "0 0 28px rgba(34, 211, 238, 0.35)",
-                animation: `${float} 4s ease-in-out infinite`,
-              }}
-            >
+            <AdminLoginIcon>
               <AdminPanelSettingsRounded style={{ fontSize: "36px" }} />
-            </div>
+            </AdminLoginIcon>
             <Title style={{ justifyContent: "center", fontSize: "26px", letterSpacing: "-0.5px" }}>
               Control Center
             </Title>
@@ -3385,3 +3441,12 @@ export default function AdminDashboard() {
     </Container>
   );
 }
+
+export default function AdminDashboard() {
+  return (
+    <AdminErrorBoundary>
+      <AdminDashboardInner />
+    </AdminErrorBoundary>
+  );
+}
+

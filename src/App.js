@@ -70,6 +70,8 @@ function App() {
         <Routes>
           <Route path="/" element={<PortfolioHome />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/*" element={<AdminDashboard />} />
+          <Route path="*" element={<PortfolioHome />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>

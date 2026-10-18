@@ -1,5 +1,6 @@
 import { LinkedIn } from "@mui/icons-material";
 import styled from "styled-components";
+import { Link } from "react-router-dom";
 import { Bio } from "../../data/constants";
 
 const FooterContainer = styled.div`
@@ -56,6 +57,23 @@ const NavLink = styled.a`
     font-size: 1rem;
   }
 `;
+
+const AdminFooterLink = styled(Link)`
+  color: #22d3ee;
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.2s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  &:hover {
+    color: #67e8f9;
+    text-shadow: 0 0 10px rgba(34, 211, 238, 0.5);
+  }
+  @media (max-width: 768px) {
+    font-size: 1rem;
+  }
+`;
 const SocialMediaIcons = styled.div`
   display: flex;
   margin-top: 1rem;
@@ -97,7 +115,7 @@ const Footer = () => {
           <NavLink href="#Experience">Experience</NavLink>
           <NavLink href="#Projects">Projects</NavLink>
           <NavLink href="#Education">Education</NavLink>
-          <NavLink href="/admin" style={{ color: "#22d3ee" }}>Admin Dashboard</NavLink>
+          <AdminFooterLink to="/admin">Admin Dashboard</AdminFooterLink>
         </Nav>
         <SocialMediaIcons>
           {Bio.linkedin && (

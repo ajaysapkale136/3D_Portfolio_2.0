@@ -752,24 +752,41 @@ export async function adminLogin(email, otp) {
  * Verify current admin session token
  */
 export async function adminVerify() {
-  const token = isBrowser ? localStorage.getItem("portfolio_admin_token") : null;
+  const token = isBrowser
+    ? localStorage.getItem("portfolio_admin_token") || sessionStorage.getItem("portfolio_admin_token")
+    : null;
   if (!token) return false;
 
   try {
+    const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+    const timeoutId = controller ? setTimeout(() => controller.abort(), 2200) : null;
+
     const response = await fetch(`${API_BASE_URL}/api/auth/verify`, {
+      signal: controller ? controller.signal : undefined,
       headers: {
         Accept: "application/json",
         ...getAdminAuthHeader(),
       },
     });
+
+    if (timeoutId) clearTimeout(timeoutId);
+
     if (response.ok) {
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
       return data.authenticated === true;
+    }
+
+    if (response.status === 401 || response.status === 403) {
+      if (isBrowser) {
+        localStorage.removeItem("portfolio_admin_token");
+        sessionStorage.removeItem("portfolio_admin_token");
+      }
+      return false;
     }
   } catch (_) {}
 
-  // If token is present, maintain active session
-  return token.length > 0;
+  // If token is locally present and validly formatted (issued by our backend or PIN)
+  return Boolean(token && (token.startsWith("adm_") || token.length >= 16));
 }
 
 /**
