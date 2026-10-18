@@ -332,9 +332,8 @@ export const projects = [
     tags: [
       "React Js",
       "Three.js",
-      "React Three Fiber",
+      "Three Fiber",
       "Framer Motion",
-      "Styled Components",
       "EmailJS"
     ],
     category: "web app",

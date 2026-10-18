@@ -45,7 +45,7 @@ function setStorage(key, value) {
 // Initial seed data conversion
 function getInitialProjects() {
   return defaultProjects.map((p, idx) => ({
-    id: p.id || idx + 1,
+    id: p.id !== undefined ? p.id : idx,
     title: p.title || "",
     category: p.category || "web app",
     tags: Array.isArray(p.tags) ? p.tags.join(", ") : p.tags || "",
@@ -139,7 +139,7 @@ function getInitialMessages() {
 }
 
 // Storage Keys
-const KEY_PROJECTS = "portfolio_admin_projects";
+const KEY_PROJECTS = "portfolio_admin_projects_v4";
 const KEY_SKILLS = "portfolio_admin_skills";
 const KEY_EXPERIENCES = "portfolio_admin_experiences";
 const KEY_EDUCATION = "portfolio_admin_education";
@@ -482,7 +482,7 @@ export async function submitContactMessage(data) {
  */
 function normalizeProjectForUI(p) {
   return {
-    id: p.id,
+    id: p.id !== undefined ? p.id : 0,
     title: p.title,
     category: p.category || "web app",
     description: p.description || "",

@@ -6,7 +6,7 @@ import styled from "styled-components";
 
 const Card = styled(motion.div)`
   width: 340px;
-  min-height: 520px;
+  height: 500px;
   background: linear-gradient(180deg, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.66));
   cursor: pointer;
   border: 1px solid ${({ theme }) => theme.border || "rgba(255, 255, 255, 0.1)"};
@@ -16,7 +16,7 @@ const Card = styled(motion.div)`
   padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
   backdrop-filter: blur(14px);
   transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
   &:hover {
@@ -28,30 +28,36 @@ const Card = styled(motion.div)`
 
 const Image = styled.img`
   width: 100%;
-  height: 190px;
+  height: 180px;
   background-color: #0b1120;
   border-radius: 14px;
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.3);
   object-fit: cover;
+  flex-shrink: 0;
 `;
 
 const Tags = styled.div`
   width: 100%;
+  height: 58px;
   display: flex;
   align-items: center;
+  align-content: flex-start;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 4px;
+  gap: 6px;
+  margin-top: 2px;
+  overflow: hidden;
+  flex-shrink: 0;
 `;
 
 const Tag = styled.span`
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 500;
   color: ${({ theme }) => theme.accent || "#22d3ee"};
   background: rgba(34, 211, 238, 0.08);
   border: 1px solid rgba(34, 211, 238, 0.18);
   border-radius: 999px;
-  padding: 4px 10px;
+  padding: 3px 9px;
+  white-space: nowrap;
 `;
 
 const MoreTag = styled(Tag)`
@@ -64,27 +70,34 @@ const Details = styled.div`
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   padding: 0 2px;
+  flex: 1;
+  min-height: 0;
 `;
 
 const Title = styled.div`
-  font-size: 21px;
+  font-size: 20px;
   font-weight: 700;
   color: ${({ theme }) => theme.text_primary || "#f8fafc"};
   display: -webkit-box;
   max-width: 100%;
-  -webkit-line-clamp: 2;
+  height: 26px;
+  line-height: 26px;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
 const Date = styled.div`
-  font-size: 13px;
+  font-size: 12.5px;
   margin-left: 2px;
   font-weight: 500;
   color: ${({ theme }) => theme.accent || "#22d3ee"};
+  height: 18px;
+  line-height: 18px;
   @media only screen and (max-width: 768px) {
     font-size: 11px;
   }
@@ -92,13 +105,14 @@ const Date = styled.div`
 
 const Description = styled.div`
   font-weight: 400;
-  font-size: 14px;
+  font-size: 13.5px;
   color: ${({ theme }) => theme.text_secondary || "#94a3b8"};
   overflow: hidden;
-  margin-top: 6px;
-  line-height: 1.6;
+  margin-top: 4px;
+  line-height: 1.5;
   display: -webkit-box;
   max-width: 100%;
+  height: 60px;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   text-overflow: ellipsis;
@@ -144,7 +158,8 @@ const ButtonsContainer = styled.div`
   gap: 10px;
   justify-content: center;
   margin-top: auto;
-  padding-top: 10px;
+  padding-top: 6px;
+  flex-shrink: 0;
 `;
 
 /* ---------------- FULL-SIZE PROPER FORMAT MODAL STYLES ---------------- */
@@ -461,7 +476,7 @@ const ProjectCard = ({ project }) => {
     ? project.tags.split(",").map((s) => s.trim()).filter(Boolean)
     : [];
 
-  const visibleTags = allTags.slice(0, 6);
+  const visibleTags = allTags.slice(0, 5);
   const hiddenTagCount = Math.max(allTags.length - visibleTags.length, 0);
 
   const openProject = () => setIsOpen(true);
