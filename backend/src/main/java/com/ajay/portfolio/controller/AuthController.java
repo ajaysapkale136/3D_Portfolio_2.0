@@ -42,7 +42,7 @@ public class AuthController {
             @Valid @RequestBody AdminVerifyOtpRequest request,
             HttpServletRequest httpRequest) {
         String clientIp = extractClientIp(httpRequest);
-        AdminLoginResponse response = adminAuthService.verifyOtp(request.email(), request.otp(), clientIp);
+        AdminLoginResponse response = adminAuthService.verifyOtp(request.email(), request.otp(), request.challengeToken(), clientIp);
         return ResponseEntity.ok(response);
     }
 

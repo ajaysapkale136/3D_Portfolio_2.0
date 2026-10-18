@@ -660,6 +660,9 @@ export async function adminSendOtp(email) {
   if (!response.ok) {
     throw new Error(data.message || data.error || "Failed to dispatch verification OTP.");
   }
+  if (data && data.challengeToken && isBrowser) {
+    sessionStorage.setItem("portfolio_admin_otp_challenge", data.challengeToken);
+  }
   return data;
 }
 
@@ -677,6 +680,8 @@ export async function adminLogin(email, otp) {
     throw new Error("Verification code (OTP) is required.");
   }
 
+  const challengeToken = isBrowser ? sessionStorage.getItem("portfolio_admin_otp_challenge") : null;
+
   // 1. Try verify-otp endpoint
   try {
     const response = await fetch(`${API_BASE_URL}/api/auth/verify-otp`, {
@@ -685,12 +690,15 @@ export async function adminLogin(email, otp) {
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      body: JSON.stringify({ email: cleanEmail, otp: cleanOtp }),
+      body: JSON.stringify({ email: cleanEmail, otp: cleanOtp, challengeToken }),
     });
 
     const data = await response.json().catch(() => ({}));
     if (response.ok && data && data.token) {
-      if (isBrowser) localStorage.setItem("portfolio_admin_token", data.token);
+      if (isBrowser) {
+        localStorage.setItem("portfolio_admin_token", data.token);
+        sessionStorage.removeItem("portfolio_admin_otp_challenge");
+      }
       return data;
     }
 
@@ -713,6 +721,7 @@ export async function adminLogin(email, otp) {
     body: JSON.stringify({
       email: cleanEmail,
       otp: cleanOtp,
+      challengeToken,
       username: cleanEmail,
       password: cleanOtp,
     }),
@@ -720,7 +729,10 @@ export async function adminLogin(email, otp) {
 
   const loginData = await loginResp.json().catch(() => ({}));
   if (loginResp.ok && loginData && loginData.token) {
-    if (isBrowser) localStorage.setItem("portfolio_admin_token", loginData.token);
+    if (isBrowser) {
+      localStorage.setItem("portfolio_admin_token", loginData.token);
+      sessionStorage.removeItem("portfolio_admin_otp_challenge");
+    }
     return loginData;
   }
 

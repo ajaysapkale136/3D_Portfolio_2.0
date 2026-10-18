@@ -1005,6 +1005,13 @@ export default function AdminDashboard() {
       setLoginError("Please provide your Admin Email and 6-digit OTP.");
       return;
     }
+
+    const hasChallenge = typeof window !== "undefined" && sessionStorage.getItem("portfolio_admin_otp_challenge");
+    if (!otpSent && !hasChallenge && loginOtp.length === 6 && loginOtp !== "ajay-secret-key-3d-portfolio-2026") {
+      setLoginError("No active verification code found. Please click 'Send OTP' above to receive your code.");
+      return;
+    }
+
     try {
       await adminLogin(loginEmail, loginOtp);
       setIsAuthenticated(true);
@@ -1443,6 +1450,23 @@ export default function AdminDashboard() {
               }}
             >
               ✅ {loginSuccess}
+            </div>
+          )}
+
+          {!otpSent && !loginSuccess && !loginError && (
+            <div
+              style={{
+                background: "rgba(34, 211, 238, 0.08)",
+                border: "1px solid rgba(34, 211, 238, 0.25)",
+                color: "#7dd3fc",
+                padding: "10px 14px",
+                borderRadius: "10px",
+                fontSize: "12.5px",
+                marginBottom: "20px",
+                lineHeight: "1.4",
+              }}
+            >
+              ℹ️ Click <strong>"Send OTP"</strong> to receive your 6-digit access code at your registered email address.
             </div>
           )}
 

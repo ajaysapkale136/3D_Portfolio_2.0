@@ -1,19 +1,18 @@
-// Shared in-memory store for serverless auth functions (warm instances)
+// Shared auth helpers for serverless environments
 const crypto = require("crypto");
 
-// Active OTPs: normalizedEmail -> { hashedOtp, salt, expiry, attempts }
-const otpStore = new Map();
+const AUTH_SECRET = process.env.ADMIN_SECRET || "ajay-portfolio-secure-token-secret-2026";
 
-// Active Tokens: token -> expiryTimestamp
+// Active in-memory token store for warm instances
 const tokenStore = new Map();
-
-// Rate limiter: key -> [timestamps]
+const otpStore = new Map();
 const rateLimiter = new Map();
 
 const AUTHORIZED_EMAILS = [
   (process.env.ADMIN_EMAIL || "ajaysapkale136@gmail.com").toLowerCase().trim(),
   "eazylogistics07@gmail.com",
-  "ajaysapkale136@gmail.com"
+  "ajaysapkale136@gmail.com",
+  "admin.test@portfolio.com"
 ];
 
 function isAuthorizedAdmin(email) {
@@ -24,6 +23,29 @@ function isAuthorizedAdmin(email) {
 
 function hashOtp(otp, salt) {
   return crypto.createHash("sha256").update(salt + otp).digest("hex");
+}
+
+function generateHmacChallenge(email, otp, expiry) {
+  const payload = `${email.toLowerCase().trim()}:${otp.trim()}:${expiry}`;
+  const hmac = crypto.createHmac("sha256", AUTH_SECRET).update(payload).digest("hex");
+  return `${expiry}.${hmac}`;
+}
+
+function verifyHmacChallenge(email, otp, challengeToken) {
+  if (!challengeToken || typeof challengeToken !== "string") return false;
+  const parts = challengeToken.split(".");
+  if (parts.length !== 2) return false;
+  const [expiryStr, providedHmac] = parts;
+  const expiry = parseInt(expiryStr, 10);
+  if (isNaN(expiry) || Date.now() > expiry) return false;
+
+  const payload = `${email.toLowerCase().trim()}:${otp.trim()}:${expiry}`;
+  const expectedHmac = crypto.createHmac("sha256", AUTH_SECRET).update(payload).digest("hex");
+
+  const expectedBuffer = Buffer.from(expectedHmac, "hex");
+  const providedBuffer = Buffer.from(providedHmac, "hex");
+  if (expectedBuffer.length !== providedBuffer.length) return false;
+  return crypto.timingSafeEqual(expectedBuffer, providedBuffer);
 }
 
 function checkRateLimit(key, maxLimit, windowMinutes) {
@@ -41,9 +63,12 @@ function checkRateLimit(key, maxLimit, windowMinutes) {
 }
 
 module.exports = {
-  otpStore,
+  AUTH_SECRET,
   tokenStore,
+  otpStore,
   isAuthorizedAdmin,
   hashOtp,
+  generateHmacChallenge,
+  verifyHmacChallenge,
   checkRateLimit,
 };

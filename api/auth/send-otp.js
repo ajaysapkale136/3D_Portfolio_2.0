@@ -1,7 +1,13 @@
 // Vercel Serverless Function: /api/auth/send-otp
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
-const { otpStore, isAuthorizedAdmin, hashOtp, checkRateLimit } = require("./_store");
+const {
+  otpStore,
+  isAuthorizedAdmin,
+  hashOtp,
+  generateHmacChallenge,
+  checkRateLimit,
+} = require("./_store");
 
 module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -31,11 +37,11 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // 2. Rate limiting (max 3 requests per 10 minutes)
+    // 2. Rate limiting (max 5 requests per 10 minutes)
     const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress || "ip";
-    if (!checkRateLimit(`otp_${ip}`, 3, 10) || !checkRateLimit(`otp_${normalized}`, 3, 10)) {
+    if (!checkRateLimit(`otp_${ip}`, 5, 10)) {
       return res.status(429).json({
-        error: "Too many OTP requests. Please wait 10 minutes before requesting another code.",
+        error: "Too many OTP requests. Please wait before requesting another code.",
       });
     }
 
@@ -46,6 +52,10 @@ module.exports = async function handler(req, res) {
     const hashedOtp = hashOtp(rawOtp, salt);
     const expiry = Date.now() + 10 * 60 * 1000; // 10 minutes
 
+    // Generate stateless cryptographic HMAC challenge token
+    const challengeToken = generateHmacChallenge(normalized, rawOtp, expiry);
+
+    // Also cache in memory for warm instances
     otpStore.set(normalized, {
       hashedOtp,
       salt,
@@ -53,7 +63,7 @@ module.exports = async function handler(req, res) {
       attempts: 0,
     });
 
-    // 4. Send email via Nodemailer
+    // 4. Send email via Nodemailer using verified Gmail SMTP
     const mailUser = process.env.SPRING_MAIL_USERNAME || "eazylogistics07@gmail.com";
     const mailPass = process.env.SPRING_MAIL_PASSWORD || "mtzfiadqkpdtsmxw";
 
@@ -72,28 +82,34 @@ module.exports = async function handler(req, res) {
         subject: `[Portfolio Security] Your Admin Login Verification Code: ${rawOtp}`,
         text: `Hello Ajay,\n\nYour one-time verification code (OTP) for accessing the 3D Portfolio Admin Portal is:\n\n${rawOtp}\n\n• Valid for 10 minutes\n• Single-use only\n• If you did not initiate this login request, please disregard this email.\n\nBest regards,\nPortfolio Security System`,
         html: `
-          <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #0f172a; color: #f8fafc;">
-            <h2 style="color: #22d3ee; margin-top: 0;">🔐 3D Portfolio Admin Access</h2>
-            <p style="font-size: 14px; color: #94a3b8;">Use the verification code below to authenticate into your Admin Control Center:</p>
-            <div style="margin: 24px 0; padding: 18px; text-align: center; background: rgba(34, 211, 238, 0.1); border: 1px solid #22d3ee; border-radius: 8px;">
-              <span style="font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #38bdf8;">${rawOtp}</span>
+          <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px; border: 1px solid #334155; border-radius: 12px; background-color: #0f172a; color: #f8fafc;">
+            <h2 style="color: #22d3ee; margin-top: 0; display: flex; align-items: center; gap: 8px;">
+              🔐 3D Portfolio Admin Verification
+            </h2>
+            <p style="font-size: 14px; color: #94a3b8; line-height: 1.6;">
+              A login request was initiated for your administrator portal. Enter the 6-digit verification code below to authenticate:
+            </p>
+            <div style="margin: 24px 0; padding: 20px; text-align: center; background: rgba(34, 211, 238, 0.08); border: 1px solid #22d3ee; border-radius: 10px;">
+              <span style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #38bdf8; font-family: monospace;">${rawOtp}</span>
             </div>
-            <p style="font-size: 12px; color: #64748b; line-height: 1.5;">
+            <p style="font-size: 12.5px; color: #64748b; line-height: 1.5; margin-bottom: 0;">
               • Code expires in <strong>10 minutes</strong>.<br/>
-              • Valid for single use only.<br/>
-              • If you did not request this code, no action is required.
+              • Never share this verification code with anyone.<br/>
+              • If you did not initiate this request, your account is safe; please disregard this email.
             </p>
           </div>
         `,
       });
+      console.log(`[send-otp] Dispatched verification email to ${normalized}`);
     } catch (mailErr) {
-      console.warn("Nodemailer dispatch warning (will continue with simulated delivery):", mailErr.message);
+      console.warn("[send-otp] Nodemailer dispatch error:", mailErr.message);
     }
 
     return res.status(200).json({
       success: true,
-      message: `Verification code has been dispatched to ${normalized}. Please check your inbox.`,
+      message: `Verification code dispatched to ${normalized}. Please check your inbox.`,
       expiryMinutes: 10,
+      challengeToken,
     });
   } catch (err) {
     console.error("send-otp error:", err);
